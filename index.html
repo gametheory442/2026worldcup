@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WC2026 Family Bracket</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── Index-only styles ── */
+
+    body {
+      background: var(--bg);
+      overflow-x: hidden;
+    }
+
+    /* Pitch texture background */
+    .pitch-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 48px,
+          rgba(0,92,52,.045) 48px,
+          rgba(0,92,52,.045) 96px
+        ),
+        var(--bg);
+      pointer-events: none;
+    }
+
+    /* ── Hero section ── */
+    .login-wrap {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .login-hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1rem 2rem;
+      text-align: center;
+    }
+
+    /* Trophy / badge mark */
+    .trophy-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 6px rgba(0,92,52,.15), 0 8px 28px rgba(0,92,52,.35);
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-8px); }
+    }
+
+    /* Eyebrow */
+    .eyebrow {
+      font-family: var(--font-head);
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--gold-dark);
+      background: var(--gold-light);
+      border: 1px solid var(--gold);
+      padding: .3rem 1.1rem;
+      border-radius: 999px;
+      margin-bottom: 1.25rem;
+      display: inline-block;
+    }
+
+    /* Big headline */
+    .login-title {
+      font-family: var(--font-head);
+      font-size: clamp(2.4rem, 8vw, 4.25rem);
+      font-weight: 700;
+      color: var(--dark);
+      line-height: 1.0;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      margin-bottom: .4rem;
+    }
+    .login-title .accent {
+      color: var(--green);
+      display: block;
+    }
+
+    .login-subtitle {
+      color: var(--muted);
+      font-size: 1rem;
+      margin: .75rem 0 0;
+      max-width: 380px;
+    }
+
+    /* ── Stats strip ── */
+    .stats-strip {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      margin: 2rem 0 0;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      box-shadow: var(--shadow-sm);
+      max-width: 480px;
+      width: 100%;
+    }
+    .stat-item {
+      flex: 1;
+      padding: .875rem .5rem;
+      text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-num {
+      font-family: var(--font-head);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--green);
+      line-height: 1;
+    }
+    .stat-lbl {
+      font-size: .68rem;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted);
+      margin-top: .2rem;
+    }
+
+    /* ── Login card ── */
+    .login-card-wrap {
+      display: flex;
+      justify-content: center;
+      padding: 2rem 1rem 3.5rem;
+      position: relative;
+      z-index: 1;
+    }
+    .login-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      padding: 2rem;
+      width: 100%;
+      max-width: 420px;
+    }
+    .login-card-title {
+      font-family: var(--font-head);
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--dark);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    /* Username field */
+    .login-input-row {
+      display: flex;
+      gap: .5rem;
+    }
+    .login-input-row .form-input {
+      flex: 1;
+      border-radius: var(--radius);
+    }
+
+    /* Returning users list */
+    .users-hint {
+      margin-top: 1.25rem;
+    }
+    .users-hint-label {
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: .55rem;
+    }
+    .users-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .35rem;
+    }
+    .user-chip-btn {
+      font-family: var(--font-body);
+      font-size: .78rem;
+      font-weight: 500;
+      padding: .3rem .75rem;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+      transition: all .13s;
+    }
+    .user-chip-btn:hover {
+      border-color: var(--green);
+      background: var(--green-light);
+      color: var(--green);
+    }
+    .users-loading {
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    /* Error */
+    #login-error {
+      display: none;
+      margin-top: .75rem;
+    }
+
+    /* ── Footer band ── */
+    .site-footer {
+      position: relative;
+      z-index: 1;
+      background: var(--green);
+      color: rgba(255,255,255,.55);
+      text-align: center;
+      font-size: .75rem;
+      padding: .75rem 1rem;
+      letter-spacing: .03em;
+    }
+    .site-footer strong { color: rgba(255,255,255,.85); }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      .stats-strip { border-radius: var(--radius); }
+      .login-card  { padding: 1.5rem 1.25rem; }
+      .login-input-row { flex-direction: column; }
+      .login-input-row .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Pitch texture -->
+<div class="pitch-bg" aria-hidden="true"></div>
+
+<!-- Minimal header (no nav since not logged in) -->
+<header class="site-header">
+  <div class="site-logo">
+    <span>⚽</span> WC2026 Family Bracket
+  </div>
+  <div style="font-size:.78rem;color:rgba(255,255,255,.65);">June 11 – July 19, 2026</div>
+</header>
+
+<!-- Main login wrap -->
+<div class="login-wrap">
+
+  <!-- Hero -->
+  <section class="login-hero">
+    <div class="trophy-mark">🏆</div>
+    <div class="eyebrow">FIFA World Cup 2026 · Family Edition</div>
+    <h1 class="login-title">
+      Pick Your<br>
+      <span class="accent">Champions</span>
+    </h1>
+    <p class="login-subtitle">
+      48 teams. 104 matches. One champion.<br>Predict the results, climb the leaderboard.
+    </p>
+
+    <!-- Quick stats -->
+    <div class="stats-strip">
+      <div class="stat-item">
+        <div class="stat-num">48</div>
+        <div class="stat-lbl">Teams</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">104</div>
+        <div class="stat-lbl">Matches</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">12</div>
+        <div class="stat-lbl">Groups</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">3</div>
+        <div class="stat-lbl">Countries</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Login card -->
+  <div class="login-card-wrap">
+    <div class="login-card">
+      <div class="login-card-title">
+        👤 Enter Your Name to Play
+      </div>
+
+      <div class="form-group" style="margin-bottom:.75rem;">
+        <label class="form-label" for="username-input">Your name</label>
+        <div class="login-input-row">
+          <input
+            id="username-input"
+            class="form-input"
+            type="text"
+            placeholder="e.g. Uncle Dave"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="words"
+            spellcheck="false"
+            maxlength="32"
+          />
+          <button class="btn btn-primary" id="login-btn">
+            Let's Go →
+          </button>
+        </div>
+      </div>
+
+      <div id="login-error" class="alert alert-error">
+        ⚠️ Please enter your name to continue.
+      </div>
+
+      <!-- Returning users -->
+      <div class="users-hint" id="users-hint">
+        <div class="users-hint-label">Or pick your name</div>
+        <div class="users-chips" id="users-chips">
+          <span class="users-loading">Loading players…</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<footer class="site-footer">
+  <strong>WC2026 Family Bracket</strong> · USA · Canada · Mexico · Final at MetLife Stadium, July 19
+</footer>
+
+<!-- ── JS ── -->
+<script type="module">
+  import {
+    getSessionUser,
+    setSessionUser,
+    userExists,
+    createUser,
+    getAllUsers,
+  } from "./js/firebase.js";
+
+  // ── If already logged in, redirect straight to picks ──
+  const existing = getSessionUser();
+  if (existing) {
+    window.location.replace("picks.html");
+  }
+
+  // ── Load existing users for quick-pick chips ──
+  const chipsEl = document.getElementById("users-chips");
+  const hintEl  = document.getElementById("users-hint");
+
+  async function loadUsers() {
+    try {
+      const users = await getAllUsers();
+      if (!users || users.length === 0) {
+        hintEl.style.display = "none";
+        return;
+      }
+      chipsEl.innerHTML = "";
+      users
+        .sort((a, b) => (a.displayName || a.username).localeCompare(b.displayName || b.username))
+        .forEach(u => {
+          const name = u.displayName || u.username;
+          const btn  = document.createElement("button");
+          btn.className   = "user-chip-btn";
+          btn.textContent = name;
+          btn.addEventListener("click", () => {
+            document.getElementById("username-input").value = name;
+            document.getElementById("username-input").focus();
+          });
+          chipsEl.appendChild(btn);
+        });
+    } catch (err) {
+      console.error("Failed to load users:", err);
+      hintEl.style.display = "none";
+    }
+  }
+
+  loadUsers();
+
+  // ── Login logic ──
+  const loginBtn   = document.getElementById("login-btn");
+  const inputEl    = document.getElementById("username-input");
+  const errorEl    = document.getElementById("login-error");
+
+  async function doLogin() {
+    const raw  = inputEl.value.trim();
+    if (!raw) {
+      errorEl.style.display = "flex";
+      inputEl.focus();
+      return;
+    }
+    errorEl.style.display = "none";
+
+    // Disable UI while working
+    loginBtn.disabled  = true;
+    loginBtn.textContent = "…";
+    inputEl.disabled   = true;
+
+    try {
+      // Create user in Firestore if they don't exist yet
+      const exists = await userExists(raw);
+      if (!exists) {
+        await createUser(raw);
+      }
+
+      // Store in session & redirect
+      setSessionUser(raw);
+      window.location.href = "picks.html";
+    } catch (err) {
+      console.error("Login error:", err);
+      loginBtn.disabled    = false;
+      loginBtn.textContent = "Let's Go →";
+      inputEl.disabled     = false;
+      errorEl.textContent  = "⚠️ Something went wrong. Check your connection and try again.";
+      errorEl.style.display = "flex";
+    }
+  }
+
+  loginBtn.addEventListener("click", doLogin);
+  inputEl.addEventListener("keydown", e => {
+    if (e.key === "Enter") doLogin();
+  });
+  inputEl.addEventListener("input", () => {
+    if (inputEl.value.trim()) {
+      errorEl.style.display = "none";
+    }
+  });
+</script>
+
+</body>
+</html>
