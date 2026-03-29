@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Picks — WC2026 Family Bracket</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── Picks-page specific overrides & extras ── */
+
+    /* Sticky group tab bar */
+    .group-tab-bar {
+      position: sticky;
+      top: 54px; /* below site-header */
+      z-index: 100;
+      background: var(--bg);
+      padding: .6rem 0 .5rem;
+      border-bottom: 1px solid var(--border);
+      margin: 0 -1rem 1.25rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+
+    /* Group header inside card */
+    .group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: .5rem;
+    }
+    .group-header-left {
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+    }
+    .group-letter-badge {
+      font-family: var(--font-head);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--white);
+      background: var(--green);
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: .02em;
+      flex-shrink: 0;
+    }
+    .group-teams-list {
+      font-size: .78rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .group-teams-list strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+    .group-complete-badge {
+      font-size: .72rem;
+      font-weight: 700;
+      font-family: var(--font-head);
+      letter-spacing: .06em;
+      color: var(--success);
+      background: #DCFCE7;
+      border: 1px solid #BBF7D0;
+      padding: .2rem .65rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+    }
+
+    /* Match rows */
+    .matches-block { }
+    .match-row {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      align-items: start;
+      gap: .75rem;
+      padding: .85rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .match-row:last-child { border-bottom: none; }
+
+    .match-meta { padding-top: .1rem; }
+    .match-num {
+      font-family: var(--font-head);
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      color: var(--green);
+      text-transform: uppercase;
+    }
+    .match-info {
+      font-size: .68rem;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-top: .15rem;
+    }
+
+    /* Picker */
+    .match-picker {
+      display: flex;
+      gap: .3rem;
+    }
+    .pick-radio { display: none; }
+    .pick-label {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .2rem;
+      padding: .5rem .3rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-size: .74rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color .13s, background .13s, color .13s;
+      text-align: center;
+      min-width: 0;
+      user-select: none;
+      line-height: 1.3;
+    }
+    .pick-label .flag { font-size: 1.1rem; line-height: 1; }
+    .pick-label .name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: 100%;
+      text-align: center;
+      font-size: .7rem;
+    }
+    .pick-label.draw {
+      flex: 0 0 50px;
+      font-size: .68rem;
+      color: var(--muted);
+    }
+    .pick-label:hover {
+      border-color: var(--green);
+      background: var(--green-light);
+      color: var(--green);
+    }
+    .pick-label.draw:hover {
+      border-color: var(--muted);
+      background: #F3F4F6;
+      color: var(--dark);
+    }
+    .pick-radio:checked + .pick-label {
+      background: var(--green);
+      border-color: var(--green-dark);
+      color: #fff;
+      font-weight: 700;
+    }
+    .pick-radio:checked + .pick-label.draw {
+      background: var(--muted);
+      border-color: #555;
+      color: #fff;
+    }
+
+    /* TBD team styling */
+    .pick-label.tbd-team {
+      font-style: italic;
+      font-size: .66rem;
+    }
+
+    /* Matchday separator */
+    .matchday-label {
+      font-family: var(--font-head);
+      font-size: .68rem;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: .4rem 0 .2rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .matchday-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Winner section */
+    .winner-section { margin-top: 2rem; }
+    .winner-section .card-title {
+      color: var(--gold-dark);
+    }
+    .winner-section .card-title svg { color: var(--gold); }
+
+    .winner-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: .4rem;
+      max-height: 280px;
+      overflow-y: auto;
+      padding: .3rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+    }
+    .winner-radio { display: none; }
+    .winner-label {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      padding: .45rem .65rem;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-size: .8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .13s;
+      user-select: none;
+    }
+    .winner-label .flag { font-size: .95rem; flex-shrink: 0; }
+    .winner-label .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .winner-label:hover { border-color: var(--gold); background: var(--gold-light); }
+    .winner-radio:checked + .winner-label {
+      background: var(--gold);
+      border-color: var(--gold-dark);
+      color: #fff;
+      font-weight: 700;
+    }
+    .winner-label.tbd-team { font-style: italic; color: var(--muted); }
+
+    .winner-selected-display {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin-top: .85rem;
+      padding: .75rem 1rem;
+      background: var(--gold-light);
+      border: 1.5px solid var(--gold);
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: .9rem;
+      transition: opacity .2s;
+    }
+    .winner-selected-display.hidden { display: none; }
+    .winner-selected-display .flag { font-size: 1.5rem; }
+    .winner-pts {
+      margin-left: auto;
+      font-size: .75rem;
+      color: var(--gold-dark);
+      font-weight: 500;
+    }
+
+    /* Progress */
+    .progress-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: .82rem;
+      color: var(--muted);
+      margin-bottom: .35rem;
+    }
+    .progress-summary strong { color: var(--green); }
+
+    /* Nav arrows between groups */
+    .group-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: .5rem;
+      padding-top: .75rem;
+      border-top: 1px solid var(--border);
+    }
+    .group-nav .btn-ghost { font-size: .8rem; }
+
+    /* Locked state overlay */
+    .locked-banner {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: 1rem 1.25rem;
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: var(--radius-lg);
+      margin-bottom: 1.25rem;
+      font-size: .875rem;
+      color: #B91C1C;
+      font-weight: 500;
+    }
+    .locked-banner svg { flex-shrink: 0; }
+
+    /* Save bar status states */
+    .save-status { font-size: .83rem; color: var(--muted); }
+    .save-status.saving { color: var(--warning); }
+    .save-status.saved  { color: var(--success); font-weight: 600; }
+    .save-status.error  { color: var(--error); }
+
+    /* Responsive */
+    @media (max-width: 620px) {
+      .match-row { grid-template-columns: 70px 1fr; gap: .5rem; }
+      .pick-label { font-size: .66rem; padding: .45rem .15rem; }
+      .pick-label .flag { font-size: .95rem; }
+      .pick-label.draw { flex: 0 0 40px; font-size: .62rem; }
+      .winner-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="site-logo">
+      <span>⚽</span> WC2026 Bracket
+    </div>
+    <nav class="site-nav">
+      <a href="picks.html">Picks</a>
+      <a href="bracket.html">Bracket</a>
+      <a href="leaderboard.html">Standings</a>
+      <span class="user-chip" id="userChip">—</span>
+    </nav>
+  </header>
+
+  <!-- ── Main ── -->
+  <main class="main" id="mainContent" style="display:none">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div class="page-title">⚽ My Group Stage Picks</div>
+      <div class="page-subtitle">Pick the winner (or draw) for all 72 group matches, then choose your tournament champion.</div>
+    </div>
+
+    <!-- Phase banner -->
+    <div id="phaseBanner" class="phase-banner open" style="display:none">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      <span id="phaseBannerText"></span>
+    </div>
+
+    <!-- Locked banner -->
+    <div id="lockedBanner" class="locked-banner" style="display:none">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <div>
+        <strong>Picks are locked.</strong> The group stage has kicked off — picks can no longer be changed. Check the <a href="leaderboard.html" style="color:inherit;text-decoration:underline">leaderboard</a> to track your score!
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="card" style="padding:1rem 1.25rem; margin-bottom:1rem;">
+      <div class="progress-summary">
+        <span>Group matches picked: <strong id="pickCount">0</strong> / 72</span>
+        <span id="winnerStatus" style="color:var(--muted)">No winner selected</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- ── Group tab bar (sticky) ── -->
+    <div class="group-tab-bar">
+      <div class="group-tabs" id="groupTabs">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- ── Group card (one shown at a time) ── -->
+    <div id="groupCard" class="card">
+      <!-- Rendered by JS -->
+    </div>
+
+    <!-- ── Tournament Winner section ── -->
+    <div class="winner-section">
+      <div class="card">
+        <div class="card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+          🏆 Tournament Winner
+        </div>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:.85rem;">
+          Who will lift the trophy on July 19 at MetLife Stadium? <strong style="color:var(--gold-dark)">+15 points</strong> if you're right.
+        </p>
+
+        <div class="winner-grid" id="winnerGrid">
+          <!-- Rendered by JS -->
+        </div>
+
+        <div class="winner-selected-display hidden" id="winnerDisplay">
+          <span class="flag" id="winnerDisplayFlag"></span>
+          <div>
+            <div style="font-size:.75rem;font-weight:500;color:var(--gold-dark);text-transform:uppercase;letter-spacing:.06em;font-family:var(--font-head)">Your Pick</div>
+            <div id="winnerDisplayName" style="font-size:.95rem"></div>
+          </div>
+          <span class="winner-pts">+15 pts if correct</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ── Loading state ── -->
+  <div class="loading-state" id="loadingState">
+    <div class="spinner"></div>
+    Loading your picks…
+  </div>
+
+  <!-- ── Sticky save bar ── -->
+  <div class="save-bar" id="saveBar" style="display:none">
+    <div class="save-status" id="saveStatus">Unsaved changes</div>
+    <button class="btn btn-primary" id="saveBtn" onclick="savePicks()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Save Picks
+    </button>
+  </div>
+
+  <!-- data.js has no ES exports — load as classic script so globals are available -->
+  <script src="js/data.js"></script>
+  <script type="module">
+    import {
+      getSessionUser,
+      getUserPicks,
+      savePhase1Picks,
+      getTournamentConfig,
+    } from "./js/firebase.js";
+
+    // data.js globals: TOURNAMENT_DATA, getGroupTeams, getGroupMatches, getTeamFlag, getTeamDisplayName
+    /* global TOURNAMENT_DATA, getGroupTeams, getGroupMatches, getTeamFlag, getTeamDisplayName */
+
+    // ── State ──
+    let currentUser   = null;
+    let currentGroup  = "A";
+    let groupPicks    = {};   // { match_1: "Mexico" | "draw" | "South Africa", ... }
+    let winnerPick    = null; // team name string
+    let isLocked      = false;
+    let hasUnsaved    = false;
+
+    const GROUPS = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+
+    // ── Short display name helper ──
+    function shortName(key) {
+      const map = {
+        "United States":           "USA",
+        "South Africa":            "S. Africa",
+        "South Korea":             "S. Korea",
+        "Saudi Arabia":            "Saudi Arabia",
+        "New Zealand":             "New Zealand",
+        "Ivory Coast":             "Ivory Coast",
+        "Cape Verde":              "Cape Verde",
+        "UEFA Path A":             "UEFA A",
+        "UEFA Path B":             "UEFA B",
+        "UEFA Path C":             "UEFA C",
+        "UEFA Path D":             "UEFA D",
+        "Intercontinental Path 1": "IC Path 1",
+        "Intercontinental Path 2": "IC Path 2",
+      };
+      return map[key] || key;
+    }
+
+    // ── Date formatter ──
+    function fmtDate(str) {
+      const d = new Date(str + "T12:00:00");
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
+
+    // ── Check if team is TBD ──
+    function isTBD(key) {
+      return TOURNAMENT_DATA.teams[key]?.tbd === true;
+    }
+
+    // ── Build group tabs ──
+    function renderGroupTabs() {
+      const container = document.getElementById("groupTabs");
+      container.innerHTML = GROUPS.map(g => {
+        const matches  = getGroupMatches(g);
+        const total    = matches.length;
+        const picked   = matches.filter(m => groupPicks[m.id] !== undefined).length;
+        const complete  = picked === total;
+        const active   = g === currentGroup;
+        let cls = "group-tab";
+        if (active)    cls += " active";
+        if (complete)  cls += " complete";
+        return `<button class="${cls}" onclick="switchGroup('${g}')" title="Group ${g}: ${picked}/${total} picked">
+          ${g}
+        </button>`;
+      }).join("");
+    }
+
+    // ── Build group card ──
+    function renderGroupCard() {
+      const matches = getGroupMatches(currentGroup);
+      const teams   = getGroupTeams(currentGroup);
+      const teamObjs = teams.map(t => ({
+        key:  t,
+        flag: getTeamFlag(t),
+        name: shortName(t),
+        tbd:  isTBD(t),
+      }));
+      const picked  = matches.filter(m => groupPicks[m.id]).length;
+      const total   = matches.length;
+
+      // Group into matchdays
+      const byMatchday = { 1: [], 2: [], 3: [] };
+      matches.forEach(m => { byMatchday[m.matchday].push(m); });
+
+      let html = `
+        <div class="group-header">
+          <div class="group-header-left">
+            <div class="group-letter-badge">G${currentGroup}</div>
+            <div class="group-teams-list">
+              <strong>Group ${currentGroup}</strong><br>
+              ${teamObjs.map(t => `${t.flag} ${t.name}`).join(" · ")}
+            </div>
+          </div>
+          ${picked === total ? `<span class="group-complete-badge">✓ Complete</span>` : `<span style="font-size:.78rem;color:var(--muted)">${picked}/${total} picked</span>`}
+        </div>
+        <div class="matches-block">
+      `;
+
+      [1, 2, 3].forEach(md => {
+        const mdMatches = byMatchday[md];
+        if (!mdMatches.length) return;
+        html += `<div class="matchday-label">Matchday ${md}</div>`;
+        mdMatches.forEach(m => {
+          html += renderMatchRow(m);
+        });
+      });
+
+      html += `</div>`;
+
+      // Group nav
+      const idx   = GROUPS.indexOf(currentGroup);
+      const prev  = idx > 0 ? GROUPS[idx - 1] : null;
+      const next  = idx < GROUPS.length - 1 ? GROUPS[idx + 1] : null;
+
+      html += `
+        <div class="group-nav">
+          <button class="btn btn-ghost btn-sm" onclick="switchGroup('${prev}')" ${!prev ? 'disabled' : ''}>
+            ← Group ${prev || ""}
+          </button>
+          <span style="font-size:.75rem;color:var(--muted)">${picked}/${total} picked</span>
+          <button class="btn btn-ghost btn-sm" onclick="switchGroup('${next}')" ${!next ? 'disabled' : ''}>
+            Group ${next || ""} →
+          </button>
+        </div>
+      `;
+
+      document.getElementById("groupCard").innerHTML = html;
+
+      // Disable all inputs if locked
+      if (isLocked) {
+        document.querySelectorAll(".pick-radio").forEach(el => el.disabled = true);
+        document.querySelectorAll(".pick-label").forEach(el => el.style.cursor = "not-allowed");
+      }
+    }
+
+    // ── Build a single match row ──
+    function renderMatchRow(m) {
+      const t1     = m.team1;
+      const t2     = m.team2;
+      const f1     = getTeamFlag(t1);
+      const f2     = getTeamFlag(t2);
+      const n1     = shortName(t1);
+      const n2     = shortName(t2);
+      const tbd1   = isTBD(t1);
+      const tbd2   = isTBD(t2);
+      const picked = groupPicks[m.id];
+
+      const r1id = `pick_${m.id}_t1`;
+      const r2id = `pick_${m.id}_t2`;
+      const rdid = `pick_${m.id}_draw`;
+
+      const chk1  = picked === t1   ? "checked" : "";
+      const chk2  = picked === t2   ? "checked" : "";
+      const chkD  = picked === "draw" ? "checked" : "";
+
+      return `
+        <div class="match-row">
+          <div class="match-meta">
+            <div class="match-num">Match ${m.matchNum}</div>
+            <div class="match-info">${fmtDate(m.date)}<br>${m.kickoffET} ET<br>${m.venue}</div>
+          </div>
+          <div class="match-picker">
+            <input type="radio" class="pick-radio" id="${r1id}" name="pick_${m.id}" value="${t1}" ${chk1} onchange="onPick('${m.id}','${t1}')" ${isLocked?'disabled':''}>
+            <label for="${r1id}" class="pick-label ${tbd1?'tbd-team':''}">
+              <span class="flag">${f1}</span>
+              <span class="name">${n1}</span>
+            </label>
+
+            <input type="radio" class="pick-radio" id="${rdid}" name="pick_${m.id}" value="draw" ${chkD} onchange="onPick('${m.id}','draw')" ${isLocked?'disabled':''}>
+            <label for="${rdid}" class="pick-label draw">Draw</label>
+
+            <input type="radio" class="pick-radio" id="${r2id}" name="pick_${m.id}" value="${t2}" ${chk2} onchange="onPick('${m.id}','${t2}')" ${isLocked?'disabled':''}>
+            <label for="${r2id}" class="pick-label ${tbd2?'tbd-team':''}">
+              <span class="flag">${f2}</span>
+              <span class="name">${n2}</span>
+            </label>
+          </div>
+        </div>
+      `;
+    }
+
+    // ── Build winner grid ──
+    function renderWinnerGrid() {
+      // Show all non-TBD teams first, then TBD
+      const allTeams = Object.keys(TOURNAMENT_DATA.teams);
+      const confirmed = allTeams.filter(t => !TOURNAMENT_DATA.teams[t].tbd);
+      const tbd       = allTeams.filter(t => TOURNAMENT_DATA.teams[t].tbd);
+      const sorted    = [...confirmed.sort(), ...tbd.sort()];
+
+      const html = sorted.map(t => {
+        const info  = TOURNAMENT_DATA.teams[t];
+        const chk   = winnerPick === t ? "checked" : "";
+        const cls   = info.tbd ? "tbd-team" : "";
+        const wid   = `winner_${t.replace(/\s+/g,"_").replace(/[^a-zA-Z0-9_]/g, "")}`;
+        return `
+          <input type="radio" class="winner-radio" id="${wid}" name="winnerPick" value="${t}" ${chk} onchange="onWinnerPick('${t}')" ${isLocked?'disabled':''}>
+          <label for="${wid}" class="winner-label ${cls}">
+            <span class="flag">${info.flag}</span>
+            <span class="name">${t}</span>
+          </label>
+        `;
+      }).join("");
+
+      document.getElementById("winnerGrid").innerHTML = html;
+
+      if (isLocked) {
+        document.querySelectorAll(".winner-radio").forEach(el => el.disabled = true);
+        document.querySelectorAll(".winner-label").forEach(el => el.style.cursor = "not-allowed");
+      }
+
+      updateWinnerDisplay();
+    }
+
+    // ── Update winner display pill ──
+    function updateWinnerDisplay() {
+      const disp = document.getElementById("winnerDisplay");
+      if (winnerPick) {
+        const info = TOURNAMENT_DATA.teams[winnerPick];
+        document.getElementById("winnerDisplayFlag").textContent = info?.flag || "🏳️";
+        document.getElementById("winnerDisplayName").textContent = winnerPick;
+        disp.classList.remove("hidden");
+      } else {
+        disp.classList.add("hidden");
+      }
+      // Also update header status
+      const ws = document.getElementById("winnerStatus");
+      if (winnerPick) {
+        const info = TOURNAMENT_DATA.teams[winnerPick];
+        ws.innerHTML = `<span style="color:var(--gold-dark);font-weight:600">${info?.flag || ""} ${winnerPick}</span>`;
+      } else {
+        ws.textContent = "No winner selected";
+      }
+    }
+
+    // ── Update progress bar ──
+    function updateProgress() {
+      const total  = TOURNAMENT_DATA.groupMatches.length; // 72
+      const picked = Object.keys(groupPicks).length;
+      const pct    = Math.round((picked / total) * 100);
+
+      document.getElementById("pickCount").textContent   = picked;
+      document.getElementById("progressFill").style.width = pct + "%";
+    }
+
+    // ── Mark dirty / show save bar ──
+    function markDirty() {
+      hasUnsaved = true;
+      if (!isLocked) {
+        document.getElementById("saveBar").style.display = "flex";
+        document.getElementById("saveStatus").textContent = "Unsaved changes";
+        document.getElementById("saveStatus").className   = "save-status";
+      }
+    }
+
+    // ── Handlers (exposed to window) ──
+    window.switchGroup = function(g) {
+      if (!g) return;
+      currentGroup = g;
+      renderGroupTabs();
+      renderGroupCard();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    window.onPick = function(matchId, value) {
+      groupPicks[matchId] = value;
+      updateProgress();
+      renderGroupTabs(); // update complete dots
+      markDirty();
+    };
+
+    window.onWinnerPick = function(team) {
+      winnerPick = team;
+      updateWinnerDisplay();
+      markDirty();
+    };
+
+    // ── Save ──
+    window.savePicks = async function() {
+      if (!currentUser || isLocked) return;
+      const btn = document.getElementById("saveBtn");
+      const status = document.getElementById("saveStatus");
+      btn.disabled = true;
+      status.textContent = "Saving…";
+      status.className   = "save-status saving";
+      try {
+        await savePhase1Picks(currentUser, groupPicks, winnerPick);
+        hasUnsaved = false;
+        status.textContent = "✓ Picks saved!";
+        status.className   = "save-status saved";
+        // Auto-hide after 3s
+        setTimeout(() => {
+          if (!hasUnsaved) {
+            document.getElementById("saveBar").style.display = "none";
+          }
+        }, 3000);
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Save failed — try again";
+        status.className   = "save-status error";
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    // ── Warn on page leave ──
+    window.addEventListener("beforeunload", e => {
+      if (hasUnsaved && !isLocked) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    });
+
+    // ── Init ──
+    async function init() {
+      // Check session
+      const user = getSessionUser();
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+      currentUser = user;
+      document.getElementById("userChip").textContent = user;
+
+      try {
+        // Load config + picks in parallel
+        const [config, picks] = await Promise.all([
+          getTournamentConfig(),
+          getUserPicks(user),
+        ]);
+
+        isLocked = !!config.phase1Locked;
+
+        // Populate existing picks
+        if (picks?.groupPicks) {
+          groupPicks = picks.groupPicks;
+        }
+        if (picks?.winnerPick) {
+          winnerPick = picks.winnerPick;
+        }
+
+        // Show/hide locked banner + phase banner
+        if (isLocked) {
+          document.getElementById("lockedBanner").style.display = "flex";
+          document.getElementById("saveBar").style.display       = "none";
+        } else {
+          const banner = document.getElementById("phaseBanner");
+          banner.style.display = "flex";
+          banner.className     = "phase-banner open";
+          const picked = Object.keys(groupPicks).length;
+          document.getElementById("phaseBannerText").textContent =
+            picked > 0
+              ? `Picks open — ${picked}/72 matches picked. Don't forget to save!`
+              : "Picks are open! Select your match winners and tournament champion, then save.";
+
+          // Show save bar only if picks already exist (coming back to edit)
+          if (picked > 0 || winnerPick) {
+            document.getElementById("saveBar").style.display = "flex";
+            document.getElementById("saveStatus").textContent = "Picks loaded — save to update";
+            document.getElementById("saveStatus").className   = "save-status";
+          }
+        }
+
+        // Render UI
+        updateProgress();
+        renderGroupTabs();
+        renderGroupCard();
+        renderWinnerGrid();
+
+        // Show main
+        document.getElementById("loadingState").style.display = "none";
+        document.getElementById("mainContent").style.display  = "block";
+
+      } catch (err) {
+        console.error("Init error:", err);
+        document.getElementById("loadingState").innerHTML = `
+          <div style="text-align:center;color:var(--error)">
+            <div style="font-size:1.5rem;margin-bottom:.5rem">⚠️</div>
+            Failed to load picks. <a href="picks.html" style="color:var(--green);text-decoration:underline">Refresh</a>
+          </div>
+        `;
+      }
+    }
+
+    init();
+  </script>
+
+</body>
+</html>
