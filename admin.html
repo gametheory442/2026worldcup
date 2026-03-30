@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — WC2026 Family Bracket</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body { background: var(--bg); }
+
+    /* ── PIN gate ── */
+    .pin-overlay {
+      position: fixed;
+      inset: 0;
+      background:
+        repeating-linear-gradient(0deg, transparent, transparent 48px, rgba(0,92,52,.04) 48px, rgba(0,92,52,.04) 96px),
+        var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      padding: 1rem;
+    }
+    .pin-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 8px 32px rgba(0,0,0,.13);
+      padding: 2.25rem 2rem;
+      width: 100%;
+      max-width: 400px;
+    }
+    .pin-icon {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: var(--green);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      margin: 0 auto 1.25rem;
+      box-shadow: 0 4px 16px rgba(0,92,52,.3);
+    }
+    .pin-title {
+      font-family: var(--font-head);
+      font-size: 1.2rem; font-weight: 700;
+      letter-spacing: .04em; text-transform: uppercase;
+      color: var(--dark); text-align: center; margin-bottom: .35rem;
+    }
+    .pin-subtitle {
+      font-size: .83rem; color: var(--muted);
+      text-align: center; margin-bottom: 1.5rem;
+    }
+    .pin-input-row { display: flex; gap: .5rem; }
+
+    /* ── Admin header strip ── */
+    .admin-header-strip {
+      background: var(--green-dark);
+      color: rgba(255,255,255,.7);
+      font-size: .72rem; font-weight: 600;
+      letter-spacing: .1em; text-transform: uppercase;
+      padding: .35rem 1.25rem;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .admin-header-strip span { color: var(--gold); }
+
+    /* ── Tab nav ── */
+    .tab-nav {
+      display: flex;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+      background: var(--white);
+      padding: 0 1rem;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      border: 1px solid var(--border);
+      border-bottom: none;
+    }
+    .tab-btn {
+      font-family: var(--font-head);
+      font-size: .78rem; letter-spacing: .06em; font-weight: 600;
+      text-transform: uppercase;
+      padding: .75rem 1.1rem;
+      border: none; background: none;
+      color: var(--muted); cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -1px; white-space: nowrap;
+      transition: all .15s;
+    }
+    .tab-btn:hover { color: var(--green); }
+    .tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── Phase control ── */
+    .phase-control-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1rem; margin-bottom: 1rem;
+    }
+    .phase-control-block {
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem; background: var(--white);
+      transition: border-color .2s;
+    }
+    .phase-control-block.locked { border-color: #FECACA; background: #FEF2F2; }
+    .phase-control-block.open   { border-color: #BBF7D0; background: #F0FDF4; }
+    .phase-control-label {
+      font-family: var(--font-head); font-size: .8rem;
+      font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+      color: var(--dark); margin-bottom: .4rem;
+    }
+    .phase-control-desc { font-size: .78rem; color: var(--muted); margin-bottom: .9rem; line-height: 1.45; }
+    .phase-status-pill {
+      display: inline-flex; align-items: center; gap: .35rem;
+      font-size: .72rem; font-weight: 700; font-family: var(--font-head);
+      letter-spacing: .07em; text-transform: uppercase;
+      padding: .2rem .65rem; border-radius: 999px; margin-bottom: .75rem;
+    }
+    .phase-status-pill.open   { background: #DCFCE7; color: #15803D; border: 1px solid #BBF7D0; }
+    .phase-status-pill.locked { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+    .phase-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+    .toggle-label-text { font-size: .82rem; font-weight: 500; color: var(--text); }
+    .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; cursor: pointer; inset: 0;
+      background: #D1D5DB; border-radius: 24px; transition: background .2s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute;
+      height: 18px; width: 18px; left: 3px; bottom: 3px;
+      background: #fff; border-radius: 50%;
+      transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,.2);
+    }
+    input:checked + .toggle-slider { background: var(--error); }
+    input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+    /* ── Stats ── */
+    .admin-stats {
+      display: grid; grid-template-columns: repeat(4,1fr);
+      gap: .75rem; margin-bottom: 1.25rem;
+    }
+    .admin-stat {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .875rem 1rem; text-align: center;
+    }
+    .admin-stat-num { font-family: var(--font-head); font-size: 1.5rem; font-weight: 700; color: var(--green); line-height: 1; }
+    .admin-stat-lbl { font-size: .68rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-top: .2rem; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .filter-bar label { font-size: .8rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+    .filter-select {
+      padding: .38rem .75rem; border: 1.5px solid var(--border);
+      border-radius: var(--radius); font-family: var(--font-body);
+      font-size: .83rem; color: var(--text); background: var(--white);
+      outline: none; cursor: pointer; transition: border-color .15s;
+    }
+    .filter-select:focus { border-color: var(--green); }
+    .filter-input {
+      padding: .38rem .75rem; border: 1.5px solid var(--border);
+      border-radius: var(--radius); font-family: var(--font-body);
+      font-size: .83rem; color: var(--text); background: var(--white);
+      outline: none; flex: 1; min-width: 140px; transition: border-color .15s;
+    }
+    .filter-input:focus { border-color: var(--green); }
+
+    /* ── Results card ── */
+    .results-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 1rem; }
+    .results-card-header {
+      padding: .75rem 1.25rem; background: var(--green-light);
+      border-bottom: 1px solid var(--green-mid);
+      display: flex; align-items: center; gap: .6rem;
+    }
+    .results-card-title { font-family: var(--font-head); font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--green); }
+    .results-card-count { font-size: .72rem; color: var(--muted); margin-left: auto; }
+
+    /* ── Match rows ── */
+    .admin-match {
+      display: grid; grid-template-columns: 90px 1fr auto;
+      align-items: center; gap: .75rem;
+      padding: .8rem 1.25rem; border-bottom: 1px solid var(--border);
+      transition: background .1s;
+    }
+    .admin-match:last-child { border-bottom: none; }
+    .admin-match:hover { background: #FAFAF9; }
+    .admin-match.has-result { background: #F0FDF4; }
+    .admin-match.has-result:hover { background: #E8FAF0; }
+    .admin-match-meta { font-family: var(--font-head); font-size: .68rem; font-weight: 600; letter-spacing: .06em; color: var(--green); }
+    .admin-match-date { font-size: .65rem; color: var(--muted); margin-top: .1rem; line-height: 1.4; }
+    .admin-match-teams { display: flex; flex-direction: column; gap: .15rem; }
+    .admin-match-teams strong { font-size: .875rem; font-weight: 600; color: var(--dark); line-height: 1.3; }
+    .admin-match-teams span { font-size: .72rem; color: var(--muted); }
+    .admin-match-controls { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+
+    .result-select {
+      padding: .38rem .65rem; border: 1.5px solid var(--border);
+      border-radius: var(--radius); font-family: var(--font-body);
+      font-size: .82rem; color: var(--text); background: var(--white);
+      outline: none; min-width: 160px; cursor: pointer;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .result-select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,92,52,.1); }
+    .result-select.has-value { border-color: var(--success); background: #F0FDF4; color: var(--success); font-weight: 600; }
+
+    .save-result-btn {
+      display: inline-flex; align-items: center; gap: .3rem;
+      padding: .38rem .75rem; border: none; border-radius: var(--radius);
+      font-family: var(--font-body); font-size: .78rem; font-weight: 600;
+      cursor: pointer; background: var(--green); color: #fff;
+      white-space: nowrap; transition: all .13s;
+    }
+    .save-result-btn:hover { background: var(--green-dark); }
+    .save-result-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .saved-tag { font-size: .72rem; font-weight: 700; color: var(--success); white-space: nowrap; display: none; }
+    .saved-tag.visible { display: inline; }
+
+    /* ── Knockout rows ── */
+    .ko-match {
+      display: grid; grid-template-columns: 110px 1fr auto;
+      align-items: center; gap: .75rem;
+      padding: .8rem 1.25rem; border-bottom: 1px solid var(--border);
+      transition: background .1s;
+    }
+    .ko-match:last-child { border-bottom: none; }
+    .ko-match:hover { background: #FAFAF9; }
+    .ko-match.has-result { background: #F0FDF4; }
+    .ko-round-badge {
+      display: inline-block; font-family: var(--font-head);
+      font-size: .62rem; font-weight: 700; letter-spacing: .07em;
+      text-transform: uppercase; padding: .18rem .5rem;
+      border-radius: 4px; background: var(--green-light); color: var(--green);
+      margin-bottom: .2rem;
+    }
+
+    /* ── Summary grid ── */
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    .summary-item { display: flex; flex-direction: column; gap: .2rem; padding: .85rem 1rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
+    .summary-item-label { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+    .summary-item-value { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; color: var(--dark); }
+    .summary-item-sub { font-size: .72rem; color: var(--muted); }
+
+    /* ── Players tab ── */
+    .player-row { display: flex; align-items: center; gap: .75rem; padding: .75rem 1.25rem; border-bottom: 1px solid var(--border); }
+    .player-row:last-child { border-bottom: none; }
+    .player-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--green-light); border: 1.5px solid var(--green-mid);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-head); font-size: .85rem; font-weight: 700;
+      color: var(--green); flex-shrink: 0;
+    }
+    .player-name-display { font-size: .9rem; font-weight: 600; color: var(--dark); }
+    .player-meta { font-size: .73rem; color: var(--muted); margin-top: .1rem; }
+    .player-pick-count { font-family: var(--font-head); font-size: .85rem; font-weight: 700; color: var(--green); text-align: right; }
+    .player-pick-label { font-size: .65rem; color: var(--muted); text-align: right; }
+
+    /* ── Loading ── */
+    .loading-state { display: flex; align-items: center; justify-content: center; gap: .75rem; padding: 3rem; color: var(--muted); font-size: .9rem; }
+    .spinner { width: 20px; height: 20px; border: 2.5px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin .65s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      padding: .75rem 1.25rem; border-radius: var(--radius);
+      font-size: .875rem; font-weight: 600;
+      box-shadow: var(--shadow-md); z-index: 999;
+      display: flex; align-items: center; gap: .5rem;
+      transform: translateY(20px); opacity: 0;
+      transition: all .25s cubic-bezier(.22,.68,0,1.2);
+      max-width: 320px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: #15803D; color: #fff; }
+    .toast.error   { background: var(--error); color: #fff; }
+    .toast.info    { background: var(--green); color: #fff; }
+
+    /* ── Responsive ── */
+    @media (max-width: 720px) {
+      .phase-control-grid { grid-template-columns: 1fr; }
+      .admin-stats { grid-template-columns: repeat(2,1fr); }
+      .admin-match { grid-template-columns: 1fr; gap: .5rem; }
+      .ko-match { grid-template-columns: 1fr; gap: .5rem; }
+      .summary-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .filter-bar { flex-direction: column; align-items: stretch; }
+      .result-select { min-width: 0; width: 100%; }
+      .admin-match-controls { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── PIN Gate ── -->
+  <div class="pin-overlay" id="pinOverlay">
+    <div class="pin-card">
+      <div class="pin-icon">🔐</div>
+      <div class="pin-title">Admin Access</div>
+      <div class="pin-subtitle">Enter the admin PIN to manage results and tournament settings.</div>
+
+      <div class="form-group">
+        <label class="form-label" for="pinInput">Admin PIN</label>
+        <div class="pin-input-row">
+          <input id="pinInput" class="form-input" type="password" placeholder="Enter PIN" autocomplete="off" maxlength="64" />
+          <button class="btn btn-primary" id="pinBtn">Unlock</button>
+        </div>
+      </div>
+
+      <div id="pinError" class="alert alert-error" style="display:none; margin-top:.5rem;">
+        ⚠️ Incorrect PIN. Try again.
+      </div>
+
+      <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border); text-align:center;">
+        <a href="index.html" style="font-size:.8rem; color:var(--muted); text-decoration:underline;">← Back to site</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Admin UI ── -->
+  <div id="adminContent" style="display:none">
+
+    <header class="site-header">
+      <div class="site-logo"><span>⚽</span> WC2026 Admin</div>
+      <nav class="site-nav">
+        <a href="picks.html">Picks</a>
+        <a href="leaderboard.html">Standings</a>
+        <span class="user-chip">🔐 Admin</span>
+      </nav>
+    </header>
+
+    <div class="admin-header-strip">
+      ⚙️ Admin Panel &nbsp;·&nbsp; <span>Results Entry &amp; Tournament Control</span>
+    </div>
+
+    <main class="main-wide">
+
+      <!-- Stats -->
+      <div class="admin-stats">
+        <div class="admin-stat"><div class="admin-stat-num" id="statPlayers">—</div><div class="admin-stat-lbl">Players</div></div>
+        <div class="admin-stat"><div class="admin-stat-num" id="statResultsEntered">—</div><div class="admin-stat-lbl">Results Entered</div></div>
+        <div class="admin-stat"><div class="admin-stat-num" id="statGroupDone">—</div><div class="admin-stat-lbl">Group Done</div></div>
+        <div class="admin-stat"><div class="admin-stat-num" id="statKoDone">—</div><div class="admin-stat-lbl">Knockout Done</div></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('phase')">⚙️ Phase Control</button>
+        <button class="tab-btn" onclick="switchTab('group')">📋 Group Results</button>
+        <button class="tab-btn" onclick="switchTab('knockout')">🏆 Knockout Results</button>
+        <button class="tab-btn" onclick="switchTab('players')">👥 Players</button>
+      </div>
+
+      <!-- Phase Control Tab -->
+      <div class="tab-content active" id="tab-phase">
+        <div class="card" style="margin-bottom:1.25rem;">
+          <div class="card-title">⚙️ Tournament Phase Control</div>
+          <p style="font-size:.85rem;color:var(--muted);margin-bottom:1.25rem;">
+            Lock phases to freeze picks. Phase 1 locks at the first Group Stage kickoff (June 11, 3 PM ET).
+            Phase 2 locks at the first Round of 32 kickoff (June 28).
+          </p>
+          <div class="phase-control-grid" id="phaseControlGrid">
+            <div class="loading-state" style="grid-column:1/-1;padding:1.5rem;"><div class="spinner"></div> Loading…</div>
+          </div>
+          <div class="alert alert-warning" style="margin-top:.5rem;">
+            ⚠️ <strong>Locking is intended to be permanent once matches begin.</strong> Only unlock if there was an error.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📊 Tournament Summary</div>
+          <div class="summary-grid" id="summaryGrid">
+            <div class="loading-state" style="grid-column:1/-1;padding:1.5rem;"><div class="spinner"></div> Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Group Results Tab -->
+      <div class="tab-content" id="tab-group">
+        <div class="card" style="padding:.875rem 1rem; margin-bottom:1rem;">
+          <div class="filter-bar">
+            <label>Filter:</label>
+            <select class="filter-select" id="groupFilter" onchange="filterGroupMatches()">
+              <option value="all">All Groups</option>
+              <option value="A">Group A</option><option value="B">Group B</option>
+              <option value="C">Group C</option><option value="D">Group D</option>
+              <option value="E">Group E</option><option value="F">Group F</option>
+              <option value="G">Group G</option><option value="H">Group H</option>
+              <option value="I">Group I</option><option value="J">Group J</option>
+              <option value="K">Group K</option><option value="L">Group L</option>
+            </select>
+            <select class="filter-select" id="matchdayFilter" onchange="filterGroupMatches()">
+              <option value="all">All Matchdays</option>
+              <option value="1">Matchday 1</option><option value="2">Matchday 2</option><option value="3">Matchday 3</option>
+            </select>
+            <select class="filter-select" id="statusFilter" onchange="filterGroupMatches()">
+              <option value="all">All Matches</option>
+              <option value="pending">Pending Only</option>
+              <option value="done">Results Entered</option>
+            </select>
+            <input class="filter-input" type="text" id="teamSearch" placeholder="Search team…" oninput="filterGroupMatches()" />
+          </div>
+        </div>
+        <div id="groupResultsContainer">
+          <div class="loading-state"><div class="spinner"></div> Loading matches…</div>
+        </div>
+      </div>
+
+      <!-- Knockout Results Tab -->
+      <div class="tab-content" id="tab-knockout">
+        <div class="alert alert-info" style="margin-bottom:1rem;">
+          ℹ️ Type the exact winning team name as it appears in data.js. No draws in knockout — every match must produce a winner.
+        </div>
+        <div id="knockoutResultsContainer">
+          <div class="loading-state"><div class="spinner"></div> Loading matches…</div>
+        </div>
+      </div>
+
+      <!-- Players Tab -->
+      <div class="tab-content" id="tab-players">
+        <div class="card">
+          <div class="card-title">👥 Registered Players</div>
+          <div id="playersContainer">
+            <div class="loading-state"><div class="spinner"></div> Loading players…</div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="js/data.js"></script>
+  <script type="module">
+    import {
+      checkAdminPin,
+      getTournamentConfig,
+      updateTournamentConfig,
+      getAllResults,
+      saveResult,
+      getAllUsers,
+      getAllPicks,
+    } from "./js/firebase.js";
+
+    /* global TOURNAMENT_DATA, getTeamFlag */
+
+    // ── State ──
+    let allResults = {};
+    let allUsers   = [];
+    let allPicks   = [];
+    let config     = {};
+
+    const ROUND_ORDER = ["R32","R16","QF","SF","3RD","FINAL"];
+
+    // ─────────────────────────────────────
+    // PIN GATE
+    // ─────────────────────────────────────
+    const pinInput = document.getElementById("pinInput");
+    const pinBtn   = document.getElementById("pinBtn");
+    const pinError = document.getElementById("pinError");
+
+    function attemptUnlock() {
+      const pin = pinInput.value.trim();
+      if (!pin) return;
+      if (checkAdminPin(pin)) {
+        document.getElementById("pinOverlay").style.display  = "none";
+        document.getElementById("adminContent").style.display = "block";
+        initAdmin();
+      } else {
+        pinError.style.display = "flex";
+        pinInput.value = "";
+        pinInput.focus();
+      }
+    }
+
+    pinBtn.addEventListener("click", attemptUnlock);
+    pinInput.addEventListener("keydown", e => { if (e.key === "Enter") attemptUnlock(); });
+    pinInput.addEventListener("input",   () => { pinError.style.display = "none"; });
+    pinInput.focus();
+
+    // ─────────────────────────────────────
+    // TOAST
+    // ─────────────────────────────────────
+    function toast(msg, type = "success", duration = 3000) {
+      const el = document.getElementById("toast");
+      el.textContent = (type === "success" ? "✓ " : type === "error" ? "⚠️ " : "ℹ️ ") + msg;
+      el.className   = `toast ${type} show`;
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => el.classList.remove("show"), duration);
+    }
+
+    // ─────────────────────────────────────
+    // HELPERS
+    // ─────────────────────────────────────
+    function shortName(key) {
+      const map = {
+        "United States":"USA","South Africa":"S. Africa","South Korea":"S. Korea",
+        "UEFA Path A":"UEFA Path A","UEFA Path B":"UEFA Path B",
+        "UEFA Path C":"UEFA Path C","UEFA Path D":"UEFA Path D",
+        "Intercontinental Path 1":"IC Path 1","Intercontinental Path 2":"IC Path 2",
+      };
+      return map[key] || key;
+    }
+
+    function fmtDate(str) {
+      const d = new Date(str + "T12:00:00");
+      return d.toLocaleDateString("en-US", { month:"short", day:"numeric" });
+    }
+
+    function initials(name) {
+      return name.split(/\s+/).slice(0,2).map(w => w[0]).join("").toUpperCase();
+    }
+
+    // ─────────────────────────────────────
+    // TABS
+    // ─────────────────────────────────────
+    window.switchTab = function(tab) {
+      const tabs = ["phase","group","knockout","players"];
+      document.querySelectorAll(".tab-btn").forEach((btn, i) => btn.classList.toggle("active", tabs[i] === tab));
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+      document.getElementById(`tab-${tab}`).classList.add("active");
+    };
+
+    // ─────────────────────────────────────
+    // PHASE CONTROL
+    // ─────────────────────────────────────
+    function renderPhaseControl() {
+      const p1 = !!config.phase1Locked;
+      const p2 = !!config.phase2Locked;
+      document.getElementById("phaseControlGrid").innerHTML = `
+        <div class="phase-control-block ${p1 ? 'locked' : 'open'}">
+          <div class="phase-control-label">Phase 1 — Group Stage</div>
+          <div class="phase-control-desc">All 72 group matches + tournament winner pick.<br>Lock at <strong>June 11, 3 PM ET</strong>.</div>
+          <div class="phase-status-pill ${p1 ? 'locked' : 'open'}">
+            <div class="phase-dot"></div>${p1 ? 'LOCKED' : 'OPEN — Picks Allowed'}
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label-text">Lock Phase 1 picks</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="phase1Toggle" ${p1 ? 'checked' : ''} onchange="togglePhase(1, this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="phase-control-block ${p2 ? 'locked' : 'open'}">
+          <div class="phase-control-label">Phase 2 — Knockout Stage</div>
+          <div class="phase-control-desc">All 32 knockout matches (R32 → Final).<br>Lock at <strong>June 28, 3 PM ET</strong>.</div>
+          <div class="phase-status-pill ${p2 ? 'locked' : 'open'}">
+            <div class="phase-dot"></div>${p2 ? 'LOCKED' : 'OPEN — Picks Allowed'}
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label-text">Lock Phase 2 picks</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="phase2Toggle" ${p2 ? 'checked' : ''} onchange="togglePhase(2, this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      `;
+    }
+
+    window.togglePhase = async function(phase, locked) {
+      const field = phase === 1 ? "phase1Locked" : "phase2Locked";
+      const toggleId = `phase${phase}Toggle`;
+      try {
+        const updates = { [field]: locked };
+        if (phase === 1) updates.currentPhase = locked ? 2 : 1;
+        await updateTournamentConfig(updates);
+        config[field] = locked;
+        if (phase === 1) config.currentPhase = locked ? 2 : 1;
+        renderPhaseControl();
+        renderSummary();
+        toast(`Phase ${phase} picks ${locked ? 'locked 🔒' : 'unlocked 🔓'}`, locked ? "info" : "success");
+      } catch (err) {
+        console.error(err);
+        toast("Failed to update phase. Check connection.", "error");
+        document.getElementById(toggleId).checked = !locked;
+      }
+    };
+
+    // ─────────────────────────────────────
+    // SUMMARY
+    // ─────────────────────────────────────
+    function renderSummary() {
+      const groupDone = TOURNAMENT_DATA.groupMatches.filter(m => allResults[m.id]).length;
+      const koDone    = TOURNAMENT_DATA.knockoutMatches.filter(m => allResults[m.id]).length;
+      const picksCount = allPicks.filter(p => Object.keys(p.groupPicks || {}).length > 0).length;
+      document.getElementById("summaryGrid").innerHTML = `
+        <div class="summary-item">
+          <div class="summary-item-label">Players Registered</div>
+          <div class="summary-item-value">${allUsers.length}</div>
+          <div class="summary-item-sub">${picksCount} have submitted picks</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-item-label">Group Stage Results</div>
+          <div class="summary-item-value">${groupDone} / 72</div>
+          <div class="summary-item-sub">${72 - groupDone} remaining</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-item-label">Knockout Results</div>
+          <div class="summary-item-value">${koDone} / 32</div>
+          <div class="summary-item-sub">${32 - koDone} remaining</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-item-label">Phase Status</div>
+          <div class="summary-item-value" style="font-size:.9rem;">
+            ${config.phase1Locked ? '🔒 P1 Locked' : '🔓 P1 Open'}
+            &nbsp;·&nbsp;
+            ${config.phase2Locked ? '🔒 P2 Locked' : '🔓 P2 Open'}
+          </div>
+          <div class="summary-item-sub">Current phase: ${config.currentPhase || 1}</div>
+        </div>
+      `;
+    }
+
+    // ─────────────────────────────────────
+    // STATS ROW
+    // ─────────────────────────────────────
+    function updateStats() {
+      const groupDone = TOURNAMENT_DATA.groupMatches.filter(m => allResults[m.id]).length;
+      const koDone    = TOURNAMENT_DATA.knockoutMatches.filter(m => allResults[m.id]).length;
+      document.getElementById("statPlayers").textContent        = allUsers.length;
+      document.getElementById("statResultsEntered").textContent = groupDone + koDone;
+      document.getElementById("statGroupDone").textContent      = `${groupDone}/72`;
+      document.getElementById("statKoDone").textContent         = `${koDone}/32`;
+    }
+
+    // ─────────────────────────────────────
+    // GROUP RESULTS
+    // ─────────────────────────────────────
+    function renderGroupResults(matches) {
+      const container = document.getElementById("groupResultsContainer");
+      if (!matches.length) {
+        container.innerHTML = `<div class="card"><div style="text-align:center;padding:2rem;color:var(--muted);">No matches match your filters.</div></div>`;
+        return;
+      }
+
+      // Group by group letter
+      const byGroup = {};
+      matches.forEach(m => { (byGroup[m.group] = byGroup[m.group] || []).push(m); });
+
+      let html = "";
+      Object.keys(byGroup).sort().forEach(g => {
+        const gMatches = byGroup[g];
+        const done = gMatches.filter(m => allResults[m.id]).length;
+        html += `<div class="results-card">
+          <div class="results-card-header">
+            <div class="results-card-title">Group ${g}</div>
+            <div class="results-card-count">${done}/${gMatches.length} entered</div>
+          </div>`;
+
+        gMatches.forEach(m => {
+          const res = allResults[m.id];
+          const t1  = m.team1; const t2 = m.team2;
+          const f1  = getTeamFlag(t1); const f2 = getTeamFlag(t2);
+          const n1  = shortName(t1);   const n2 = shortName(t2);
+
+          const opts = [
+            { value: t1, label: `${f1} ${n1}` },
+            { value: "draw", label: "Draw" },
+            { value: t2, label: `${f2} ${n2}` },
+          ].map(o => `<option value="${o.value}" ${res?.winner === o.value ? 'selected' : ''}>${o.label}</option>`).join("");
+
+          html += `
+            <div class="admin-match ${res ? 'has-result' : ''}" id="row_${m.id}">
+              <div>
+                <div class="admin-match-meta">Match ${m.matchNum} · G${m.group}</div>
+                <div class="admin-match-date">${fmtDate(m.date)}<br>${m.kickoffET} ET</div>
+              </div>
+              <div class="admin-match-teams">
+                <strong>${f1} ${n1} vs ${f2} ${n2}</strong>
+                <span>${m.venue}${res ? ` · <span style="color:var(--success);font-weight:600;">✓ ${res.winner === 'draw' ? 'Draw' : res.winner}</span>` : ''}</span>
+              </div>
+              <div class="admin-match-controls">
+                <select class="result-select ${res ? 'has-value' : ''}" id="sel_${m.id}" onchange="onSelChange('${m.id}')">
+                  <option value="">— Pick winner —</option>${opts}
+                </select>
+                <button class="save-result-btn" id="savebtn_${m.id}" onclick="saveGroupResult('${m.id}')">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Save
+                </button>
+                <span class="saved-tag ${res ? 'visible' : ''}" id="savedtag_${m.id}">✓ Saved</span>
+              </div>
+            </div>`;
+        });
+        html += `</div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    window.onSelChange = function(id) {
+      const sel = document.getElementById(`sel_${id}`);
+      sel.classList.toggle("has-value", !!sel.value);
+    };
+
+    window.saveGroupResult = async function(id) {
+      const sel    = document.getElementById(`sel_${id}`);
+      const winner = sel.value;
+      if (!winner) { toast("Select a winner first.", "error"); return; }
+
+      const btn      = document.getElementById(`savebtn_${id}`);
+      const savedTag = document.getElementById(`savedtag_${id}`);
+      const row      = document.getElementById(`row_${id}`);
+
+      btn.disabled  = true;
+      btn.innerHTML = `<div class="spinner" style="width:12px;height:12px;border-width:2px;"></div>`;
+
+      try {
+        await saveResult(id, winner, "group");
+        allResults[id] = { winner, phase: "group" };
+        savedTag.classList.add("visible");
+        sel.classList.add("has-value");
+        row.classList.add("has-result");
+        // Update subtitle
+        const subtitle = row.querySelector(".admin-match-teams span");
+        if (subtitle) {
+          const m = TOURNAMENT_DATA.groupMatches.find(m => m.id === id);
+          if (m) subtitle.innerHTML = `${m.venue} · <span style="color:var(--success);font-weight:600;">✓ ${winner === 'draw' ? 'Draw' : winner}</span>`;
+        }
+        toast(`Saved: ${winner === 'draw' ? 'Draw' : winner}`, "success");
+        updateStats(); renderSummary();
+      } catch (err) {
+        console.error(err);
+        toast("Save failed. Check connection.", "error");
+      } finally {
+        btn.disabled  = false;
+        btn.innerHTML = `<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Save`;
+      }
+    };
+
+    window.filterGroupMatches = function() {
+      const g   = document.getElementById("groupFilter").value;
+      const md  = document.getElementById("matchdayFilter").value;
+      const st  = document.getElementById("statusFilter").value;
+      const q   = document.getElementById("teamSearch").value.toLowerCase().trim();
+
+      let m = TOURNAMENT_DATA.groupMatches;
+      if (g  !== "all") m = m.filter(x => x.group === g);
+      if (md !== "all") m = m.filter(x => String(x.matchday) === md);
+      if (st === "pending") m = m.filter(x => !allResults[x.id]);
+      if (st === "done")    m = m.filter(x => !!allResults[x.id]);
+      if (q) m = m.filter(x => x.team1.toLowerCase().includes(q) || x.team2.toLowerCase().includes(q));
+
+      renderGroupResults(m);
+    };
+
+    // ─────────────────────────────────────
+    // KNOCKOUT RESULTS
+    // ─────────────────────────────────────
+    function renderKnockoutResults() {
+      const container = document.getElementById("knockoutResultsContainer");
+      const byRound   = {};
+      TOURNAMENT_DATA.knockoutMatches.forEach(m => { (byRound[m.round] = byRound[m.round] || []).push(m); });
+
+      let html = "";
+      ROUND_ORDER.forEach(round => {
+        const rMatches = byRound[round] || [];
+        if (!rMatches.length) return;
+        const label = TOURNAMENT_DATA.roundLabels[round] || round;
+        const done  = rMatches.filter(m => allResults[m.id]).length;
+
+        html += `<div class="results-card">
+          <div class="results-card-header">
+            <div class="results-card-title">${label}</div>
+            <div class="results-card-count">${done}/${rMatches.length} entered</div>
+          </div>`;
+
+        rMatches.forEach(m => {
+          const res = allResults[m.id];
+          html += `
+            <div class="ko-match ${res ? 'has-result' : ''}" id="row_${m.id}">
+              <div>
+                <span class="ko-round-badge">${label}</span>
+                <div class="admin-match-meta" style="margin-top:.2rem;">Match ${m.matchNum}</div>
+                <div class="admin-match-date">${fmtDate(m.date)}<br>${m.venue}</div>
+              </div>
+              <div class="admin-match-teams">
+                <strong>${m.team1Desc || 'TBD'} vs ${m.team2Desc || 'TBD'}</strong>
+                <span id="ko_status_${m.id}" style="${res ? 'color:var(--success);font-weight:600;' : 'color:var(--muted);'}">
+                  ${res ? `✓ Winner: ${res.winner}` : 'No result yet'}
+                </span>
+              </div>
+              <div class="admin-match-controls">
+                <input
+                  type="text"
+                  class="filter-input"
+                  style="min-width:160px;${res ? 'border-color:var(--success);background:#F0FDF4;' : ''}"
+                  id="ko_input_${m.id}"
+                  placeholder="Winner team name…"
+                  value="${res?.winner || ''}"
+                />
+                <button class="save-result-btn" id="savebtn_${m.id}" onclick="saveKoResult('${m.id}')">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Save
+                </button>
+                <span class="saved-tag ${res ? 'visible' : ''}" id="savedtag_${m.id}">✓ Saved</span>
+              </div>
+            </div>`;
+        });
+
+        html += `</div>`;
+      });
+
+      container.innerHTML = html;
+    }
+
+    window.saveKoResult = async function(id) {
+      const inp    = document.getElementById(`ko_input_${id}`);
+      const winner = inp.value.trim();
+      if (!winner) { toast("Enter the winning team name.", "error"); return; }
+
+      const btn      = document.getElementById(`savebtn_${id}`);
+      const savedTag = document.getElementById(`savedtag_${id}`);
+      const row      = document.getElementById(`row_${id}`);
+      const status   = document.getElementById(`ko_status_${id}`);
+
+      btn.disabled  = true;
+      btn.innerHTML = `<div class="spinner" style="width:12px;height:12px;border-width:2px;"></div>`;
+
+      try {
+        await saveResult(id, winner, "knockout");
+        allResults[id] = { winner, phase: "knockout" };
+        savedTag.classList.add("visible");
+        row.classList.add("has-result");
+        inp.style.borderColor = "var(--success)";
+        inp.style.background  = "#F0FDF4";
+        if (status) { status.style.color = "var(--success)"; status.style.fontWeight = "600"; status.textContent = `✓ Winner: ${winner}`; }
+        toast(`Saved: ${winner}`, "success");
+        updateStats(); renderSummary();
+      } catch (err) {
+        console.error(err);
+        toast("Save failed. Check connection.", "error");
+      } finally {
+        btn.disabled  = false;
+        btn.innerHTML = `<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Save`;
+      }
+    };
+
+    // ─────────────────────────────────────
+    // PLAYERS TAB
+    // ─────────────────────────────────────
+    function renderPlayers() {
+      const container = document.getElementById("playersContainer");
+      if (!allUsers.length) {
+        container.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--muted);">No players registered yet.</div>`;
+        return;
+      }
+
+      const picksMap = {};
+      allPicks.forEach(p => { picksMap[p.username] = p; });
+
+      const sorted = [...allUsers].sort((a,b) =>
+        (a.displayName || a.username).localeCompare(b.displayName || b.username)
+      );
+
+      const rows = sorted.map(u => {
+        const name   = u.displayName || u.username;
+        const picks  = picksMap[u.username];
+        const gPicked = Object.keys(picks?.groupPicks || {}).length;
+        const winner  = picks?.winnerPick;
+        const wFlag   = winner ? (TOURNAMENT_DATA.teams[winner]?.flag || "🏳️") : "";
+        return `
+          <div class="player-row">
+            <div class="player-avatar">${initials(name)}</div>
+            <div style="flex:1;min-width:0;">
+              <div class="player-name-display">${name}</div>
+              <div class="player-meta">${gPicked > 0
+                ? `${gPicked}/72 group picks · ${winner ? `🏆 ${wFlag} ${winner}` : 'No champion pick'}`
+                : 'No picks submitted yet'
+              }</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div class="player-pick-count">${gPicked}</div>
+              <div class="player-pick-label">picks</div>
+            </div>
+          </div>`;
+      }).join("");
+
+      container.innerHTML = `<div>${rows}</div>
+        <div style="padding:.75rem 1.25rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--muted);">
+          ${allUsers.length} player${allUsers.length !== 1 ? 's' : ''} registered
+        </div>`;
+    }
+
+    // ─────────────────────────────────────
+    // INIT
+    // ─────────────────────────────────────
+    async function initAdmin() {
+      try {
+        [config, allResults, allUsers, allPicks] = await Promise.all([
+          getTournamentConfig(),
+          getAllResults(),
+          getAllUsers(),
+          getAllPicks(),
+        ]);
+
+        updateStats();
+        renderPhaseControl();
+        renderSummary();
+        renderGroupResults(TOURNAMENT_DATA.groupMatches);
+        renderKnockoutResults();
+        renderPlayers();
+
+      } catch (err) {
+        console.error("Admin init error:", err);
+        toast("Failed to load admin data. Check connection.", "error", 6000);
+      }
+    }
+  </script>
+
+</body>
+</html>
