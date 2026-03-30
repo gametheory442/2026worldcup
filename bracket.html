@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bracket — WC2026 Family Bracket</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── Bracket-page specific styles ── */
+
+    .locked-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: .85rem;
+      padding: 1.25rem 1.5rem;
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: var(--radius-lg);
+      margin-bottom: 1.5rem;
+      font-size: .875rem;
+      color: #B91C1C;
+      font-weight: 500;
+    }
+    .locked-banner svg { flex-shrink: 0; margin-top: .1rem; }
+
+    .waiting-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: .85rem;
+      padding: 1.5rem;
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: var(--radius-lg);
+      margin-bottom: 1.5rem;
+      color: #92400E;
+    }
+    .waiting-banner svg { flex-shrink: 0; margin-top: .1rem; }
+    .waiting-banner h3 {
+      font-family: var(--font-head);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      margin-bottom: .35rem;
+    }
+    .waiting-banner p { font-size: .85rem; line-height: 1.55; }
+
+    .progress-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: .82rem;
+      color: var(--muted);
+      margin-bottom: .35rem;
+    }
+    .progress-summary strong { color: var(--green); }
+
+    /* Round sections */
+    .round-section { margin-bottom: 2rem; }
+
+    .round-header {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin-bottom: .85rem;
+      flex-wrap: wrap;
+    }
+    .round-badge {
+      font-family: var(--font-head);
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--white);
+      background: var(--green);
+      padding: .3rem .75rem;
+      border-radius: var(--radius);
+      white-space: nowrap;
+    }
+    .round-badge.final-badge  { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); }
+    .round-badge.sf-badge     { background: #7C3AED; }
+    .round-badge.qf-badge     { background: #2563EB; }
+    .round-badge.r16-badge    { background: #0891B2; }
+    .round-badge.r32-badge    { background: var(--green); }
+    .round-badge.third-badge  { background: #CD7F32; }
+
+    .round-title-text {
+      font-family: var(--font-head);
+      font-size: .9rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--dark);
+    }
+    .round-progress {
+      margin-left: auto;
+      font-size: .75rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* Match grid */
+    .matches-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: .65rem;
+    }
+    .matches-grid.single { grid-template-columns: 1fr; max-width: 460px; }
+    .matches-grid.two    { grid-template-columns: repeat(2, 1fr); }
+
+    /* Match cards */
+    .bracket-match {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: .875rem 1rem;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .bracket-match:hover { border-color: var(--green-mid); box-shadow: var(--shadow-sm); }
+    .bracket-match.has-pick { border-color: var(--green-mid); }
+
+    .bracket-match-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: .65rem;
+    }
+    .bracket-match-num {
+      font-family: var(--font-head);
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--green);
+    }
+    .bracket-match-meta {
+      font-size: .65rem;
+      color: var(--muted);
+      text-align: right;
+      line-height: 1.4;
+    }
+
+    .bracket-pick { display: flex; flex-direction: column; gap: .35rem; }
+    .bracket-radio { display: none; }
+    .bracket-label {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      padding: .55rem .75rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-size: .82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .13s;
+      user-select: none;
+    }
+    .bracket-label .flag { font-size: 1rem; flex-shrink: 0; line-height: 1; }
+    .bracket-label .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .bracket-label .hint { font-size: .62rem; color: var(--muted); font-style: italic; margin-left: auto; flex-shrink: 0; white-space: nowrap; }
+    .bracket-label:hover { border-color: var(--green); background: var(--green-light); color: var(--green); }
+    .bracket-label:hover .hint { color: var(--green); opacity: .7; }
+    .bracket-radio:checked + .bracket-label { background: var(--green); border-color: var(--green-dark); color: #fff; font-weight: 700; }
+    .bracket-radio:checked + .bracket-label .hint { color: rgba(255,255,255,.65); }
+
+    /* Final match */
+    .bracket-match.final-match {
+      border: 2px solid var(--gold);
+      background: linear-gradient(135deg, #FFFDF5, #FFF9E8);
+    }
+    .bracket-match.final-match .bracket-label:hover { border-color: var(--gold); background: var(--gold-light); color: var(--gold-dark); }
+    .bracket-match.final-match .bracket-radio:checked + .bracket-label { background: var(--gold); border-color: var(--gold-dark); color: #fff; }
+
+    /* vs divider */
+    .vs-divider { display: flex; align-items: center; gap: .4rem; margin: .05rem 0; }
+    .vs-divider::before, .vs-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .vs-text { font-family: var(--font-head); font-size: .62rem; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+
+    /* TBD option */
+    .tbd-label {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      padding: .55rem .75rem;
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius);
+      font-size: .78rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* Result badge */
+    .result-badge {
+      margin-top: .5rem;
+      font-size: .7rem;
+      color: var(--success);
+      font-weight: 600;
+      text-align: center;
+    }
+
+    /* Round divider */
+    .round-divider {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin: 1.5rem 0;
+      color: var(--muted);
+      font-size: .85rem;
+    }
+    .round-divider::before, .round-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* Phase banner */
+    .phase-banner {
+      display: flex; align-items: center; gap: .75rem;
+      padding: .875rem 1.1rem; border-radius: var(--radius);
+      font-size: .875rem; font-weight: 500; margin-bottom: 1.25rem;
+    }
+    .phase-banner.open   { background: #DCFCE7; color: #15803D; border: 1px solid #BBF7D0; }
+    .phase-banner.locked { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+
+    /* Save bar */
+    .save-status { font-size: .83rem; color: var(--muted); }
+    .save-status.saving { color: var(--warning); }
+    .save-status.saved  { color: var(--success); font-weight: 600; }
+    .save-status.error  { color: var(--error); }
+
+    /* Scoring guide */
+    .ko-scoring-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: .4rem;
+    }
+    .ko-score-item {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: .5rem; padding: .4rem .65rem;
+      background: var(--bg); border-radius: var(--radius); border: 1px solid var(--border); font-size: .8rem;
+    }
+    .ko-pts { font-family: var(--font-head); font-size: .8rem; font-weight: 700; color: var(--green); background: var(--green-light); padding: .1rem .45rem; border-radius: 4px; flex-shrink: 0; }
+    .ko-pts.gold { color: var(--gold-dark); background: var(--gold-light); }
+
+    @media (max-width: 680px) {
+      .matches-grid        { grid-template-columns: 1fr; }
+      .matches-grid.two    { grid-template-columns: 1fr; }
+      .bracket-label .hint { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="site-logo">
+      <span>⚽</span> WC2026 Bracket
+    </div>
+    <nav class="site-nav">
+      <a href="picks.html">Picks</a>
+      <a href="bracket.html" style="color:#fff;font-weight:700;">Bracket</a>
+      <a href="leaderboard.html">Standings</a>
+      <span class="user-chip" id="userChip">—</span>
+    </nav>
+  </header>
+
+  <!-- ── Global loading ── -->
+  <div class="loading-state" id="loadingState" style="min-height:60vh;">
+    <div class="spinner"></div>
+    Loading bracket…
+  </div>
+
+  <!-- ── Waiting (Phase 1 not yet locked) ── -->
+  <main class="main" id="waitingContent" style="display:none">
+    <div class="page-header">
+      <div class="page-title">🏆 Knockout Bracket</div>
+      <div class="page-subtitle">Round of 32 through the Final — Matches 73–104</div>
+    </div>
+
+    <div class="waiting-banner">
+      <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 8v4l3 3"/>
+      </svg>
+      <div>
+        <h3>⏳ Opens After Group Stage Kicks Off</h3>
+        <p>
+          Knockout bracket picks unlock once the group stage has started and Phase 1 is locked
+          (<strong>June 11, 3 PM ET</strong>). Come back then to predict every match from
+          the Round of 32 all the way to the Final!
+        </p>
+        <div style="margin-top:1rem;display:flex;gap:.65rem;flex-wrap:wrap;">
+          <a href="picks.html" class="btn btn-primary btn-sm">Make Group Stage Picks →</a>
+          <a href="leaderboard.html" class="btn btn-ghost btn-sm">View Standings</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 What You'll Pick in Phase 2</div>
+      <div class="ko-scoring-grid">
+        <div class="ko-score-item"><span>Round of 32 winner (×16)</span><span class="ko-pts">+3</span></div>
+        <div class="ko-score-item"><span>Round of 16 winner (×8)</span><span class="ko-pts">+5</span></div>
+        <div class="ko-score-item"><span>Quarterfinal winner (×4)</span><span class="ko-pts">+7</span></div>
+        <div class="ko-score-item"><span>Semifinal winner (×2)</span><span class="ko-pts">+9</span></div>
+        <div class="ko-score-item"><span>Third Place match</span><span class="ko-pts">+0</span></div>
+        <div class="ko-score-item"><span>Final winner (×1)</span><span class="ko-pts">+12</span></div>
+      </div>
+      <p style="font-size:.78rem;color:var(--muted);margin-top:.85rem;">
+        Maximum knockout score: <strong style="color:var(--dark)">136 pts</strong>.
+        Plus your Phase 1 tournament champion pick is worth <strong style="color:var(--gold-dark)">+15 pts</strong> separately.
+      </p>
+    </div>
+  </main>
+
+  <!-- ── Main bracket ── -->
+  <main class="main" id="mainContent" style="display:none">
+
+    <div class="page-header">
+      <div class="page-title">🏆 Knockout Bracket</div>
+      <div class="page-subtitle">Pick the winner of every match — Round of 32 through the Final. No draws in knockout.</div>
+    </div>
+
+    <!-- Phase banner -->
+    <div id="phaseBanner" class="phase-banner open" style="display:none">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      <span id="phaseBannerText"></span>
+    </div>
+
+    <!-- Locked banner -->
+    <div id="lockedBanner" class="locked-banner" style="display:none">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <div>
+        <strong>Bracket picks are locked.</strong> The Round of 32 has kicked off — predictions can no longer be changed.
+        Check the <a href="leaderboard.html" style="color:inherit;text-decoration:underline">leaderboard</a> to track your score!
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="card" style="padding:1rem 1.25rem;margin-bottom:1rem;">
+      <div class="progress-summary">
+        <span>Matches picked: <strong id="pickCount">0</strong> / 32</span>
+        <span id="pickPercent" style="color:var(--muted)">0% complete</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Bracket rounds -->
+    <div id="bracketContainer">
+      <!-- Rendered by JS -->
+    </div>
+
+    <!-- Scoring guide -->
+    <div class="card" style="margin-top:1.5rem;">
+      <div class="card-title">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Points Per Round
+      </div>
+      <div class="ko-scoring-grid">
+        <div class="ko-score-item"><span>Round of 32</span><span class="ko-pts">+3</span></div>
+        <div class="ko-score-item"><span>Round of 16</span><span class="ko-pts">+5</span></div>
+        <div class="ko-score-item"><span>Quarterfinals</span><span class="ko-pts">+7</span></div>
+        <div class="ko-score-item"><span>Semifinals</span><span class="ko-pts">+9</span></div>
+        <div class="ko-score-item"><span>Final</span><span class="ko-pts">+12</span></div>
+        <div class="ko-score-item"><span>Champion (Phase 1 pick)</span><span class="ko-pts gold">+15</span></div>
+      </div>
+      <p style="font-size:.75rem;color:var(--muted);margin-top:.85rem;">
+        No draws in knockout — every match produces a winner via extra time and penalties if needed.
+        Picks lock at the first Round of 32 kickoff on <strong>June 28</strong>.
+      </p>
+    </div>
+
+  </main>
+
+  <!-- ── Sticky save bar ── -->
+  <div class="save-bar" id="saveBar" style="display:none">
+    <div class="save-status" id="saveStatus">Unsaved changes</div>
+    <button class="btn btn-primary" id="saveBtn" onclick="savePicks()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Save Bracket
+    </button>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script type="module">
+    import {
+      getSessionUser,
+      getUserPicks,
+      savePhase2Picks,
+      getTournamentConfig,
+      getAllResults,
+    } from "./js/firebase.js";
+
+    /* global TOURNAMENT_DATA */
+
+    // ── State ──
+    let currentUser   = null;
+    let knockoutPicks = {};
+    let isLocked      = false;
+    let hasUnsaved    = false;
+    let liveResults   = {};
+
+    const ROUND_ORDER = ["R32", "R16", "QF", "SF", "3RD", "FINAL"];
+    const ROUND_CONFIG = {
+      R32:   { label: "Round of 32",    pts: 3,  badgeCls: "r32-badge",   gridCls: "" },
+      R16:   { label: "Round of 16",    pts: 5,  badgeCls: "r16-badge",   gridCls: "" },
+      QF:    { label: "Quarterfinals",  pts: 7,  badgeCls: "qf-badge",    gridCls: "two" },
+      SF:    { label: "Semifinals",     pts: 9,  badgeCls: "sf-badge",    gridCls: "two" },
+      "3RD": { label: "Third Place",    pts: 0,  badgeCls: "third-badge", gridCls: "single" },
+      FINAL: { label: "The Final 🏆",   pts: 12, badgeCls: "final-badge", gridCls: "single", isFinal: true },
+    };
+
+    // ── Helpers ──
+    function shortName(key) {
+      if (!key) return "TBD";
+      const map = {
+        "United States":           "USA",
+        "South Africa":            "S. Africa",
+        "South Korea":             "S. Korea",
+        "Saudi Arabia":            "Saudi Arabia",
+        "Ivory Coast":             "Ivory Coast",
+        "New Zealand":             "New Zealand",
+        "Cape Verde":              "Cape Verde",
+        "UEFA Path A":             "UEFA Path A",
+        "UEFA Path B":             "UEFA Path B",
+        "UEFA Path C":             "UEFA Path C",
+        "UEFA Path D":             "UEFA Path D",
+        "Intercontinental Path 1": "IC Path 1",
+        "Intercontinental Path 2": "IC Path 2",
+      };
+      return map[key] || key;
+    }
+
+    function getFlag(key) {
+      if (!key) return "🏳️";
+      const team = TOURNAMENT_DATA.teams[key];
+      return team ? team.flag : "🏳️";
+    }
+
+    function fmtDate(str) {
+      const d = new Date(str + "T12:00:00");
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
+
+    // Is this string a descriptor (not a real team name)?
+    function isDescriptor(str) {
+      if (!str) return true;
+      return (
+        str.startsWith("1st ") ||
+        str.startsWith("2nd ") ||
+        str.startsWith("W ") ||
+        str.startsWith("L ") ||
+        str.startsWith("Best 3rd") ||
+        str === "TBD"
+      );
+    }
+
+    // ── Render all rounds ──
+    function renderBracket() {
+      const byRound = {};
+      TOURNAMENT_DATA.knockoutMatches.forEach(m => {
+        (byRound[m.round] = byRound[m.round] || []).push(m);
+      });
+
+      let html = "";
+
+      ROUND_ORDER.forEach((round, idx) => {
+        const matches = byRound[round] || [];
+        if (!matches.length) return;
+
+        const cfg = ROUND_CONFIG[round];
+        const picked = matches.filter(m => knockoutPicks[m.id]).length;
+
+        if (idx > 0) {
+          html += `<div class="round-divider">▼</div>`;
+        }
+
+        html += `
+          <div class="round-section" id="round_${round}">
+            <div class="round-header">
+              <span class="round-badge ${cfg.badgeCls}">${cfg.label}</span>
+              <span class="round-title-text">${cfg.pts > 0 ? `+${cfg.pts} pts per correct pick` : 'For glory!'}</span>
+              <span class="round-progress">${picked}/${matches.length} picked</span>
+            </div>
+            <div class="matches-grid ${cfg.gridCls || ''}">
+              ${matches.map(m => renderMatchCard(m, cfg)).join("")}
+            </div>
+          </div>
+        `;
+      });
+
+      document.getElementById("bracketContainer").innerHTML = html;
+
+      // Disable if locked
+      if (isLocked) {
+        document.querySelectorAll(".bracket-radio").forEach(el => el.disabled = true);
+        document.querySelectorAll(".bracket-label").forEach(el => el.style.cursor = "not-allowed");
+      }
+    }
+
+    function renderMatchCard(m, cfg) {
+      const result  = liveResults[m.id];
+      const picked  = knockoutPicks[m.id];
+      const hasPick = !!picked;
+
+      const desc1 = m.team1Desc || "TBD";
+      const desc2 = m.team2Desc || "TBD";
+
+      return `
+        <div class="bracket-match ${cfg.isFinal ? 'final-match' : ''} ${hasPick ? 'has-pick' : ''}" id="card_${m.id}">
+          <div class="bracket-match-header">
+            <span class="bracket-match-num">Match ${m.matchNum}</span>
+            <span class="bracket-match-meta">${fmtDate(m.date)}<br>${m.venue}</span>
+          </div>
+          <div class="bracket-pick">
+            ${renderTeamOption(m, desc1, 1, picked)}
+            <div class="vs-divider"><span class="vs-text">vs</span></div>
+            ${renderTeamOption(m, desc2, 2, picked)}
+          </div>
+          ${result ? `<div class="result-badge">✓ Result: ${result.winner}</div>` : ''}
+        </div>
+      `;
+    }
+
+    function renderTeamOption(m, desc, teamNum, currentPick) {
+      if (!desc || desc === "TBD") {
+        return `<div class="tbd-label">🏳️ <span>To Be Determined</span></div>`;
+      }
+
+      const flag    = isDescriptor(desc) ? "🏳️" : getFlag(desc);
+      const name    = isDescriptor(desc) ? desc : shortName(desc);
+      const radioId = `pick_${m.id}_t${teamNum}`;
+      const checked = currentPick === desc ? "checked" : "";
+
+      // Safe-escape for onchange attr
+      const safeDesc = desc.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+
+      return `
+        <input type="radio" class="bracket-radio" id="${radioId}" name="pick_${m.id}" value="${desc}" ${checked}
+               onchange="onPick('${m.id}', '${safeDesc}')" ${isLocked ? 'disabled' : ''}>
+        <label for="${radioId}" class="bracket-label">
+          <span class="flag">${flag}</span>
+          <span class="name">${name}</span>
+        </label>
+      `;
+    }
+
+    // ── Progress ──
+    function updateProgress() {
+      const total  = TOURNAMENT_DATA.knockoutMatches.length;
+      const picked = Object.keys(knockoutPicks).length;
+      const pct    = Math.round((picked / total) * 100);
+
+      document.getElementById("pickCount").textContent    = picked;
+      document.getElementById("pickPercent").textContent  = `${pct}% complete`;
+      document.getElementById("progressFill").style.width = pct + "%";
+    }
+
+    function updateRoundProgress() {
+      const byRound = {};
+      TOURNAMENT_DATA.knockoutMatches.forEach(m => {
+        (byRound[m.round] = byRound[m.round] || []).push(m);
+      });
+      ROUND_ORDER.forEach(round => {
+        const matches = byRound[round] || [];
+        const el = document.querySelector(`#round_${round} .round-progress`);
+        if (el) {
+          const picked = matches.filter(m => knockoutPicks[m.id]).length;
+          el.textContent = `${picked}/${matches.length} picked`;
+        }
+      });
+    }
+
+    // ── Dirty state ──
+    function markDirty() {
+      hasUnsaved = true;
+      if (!isLocked) {
+        document.getElementById("saveBar").style.display = "flex";
+        document.getElementById("saveStatus").textContent = "Unsaved changes";
+        document.getElementById("saveStatus").className   = "save-status";
+      }
+    }
+
+    // ── Handlers (window-exposed) ──
+    window.onPick = function(matchId, value) {
+      knockoutPicks[matchId] = value;
+      const card = document.getElementById(`card_${matchId}`);
+      if (card) card.classList.add("has-pick");
+      updateProgress();
+      updateRoundProgress();
+      markDirty();
+    };
+
+    window.savePicks = async function() {
+      if (!currentUser || isLocked) return;
+      const btn    = document.getElementById("saveBtn");
+      const status = document.getElementById("saveStatus");
+      btn.disabled = true;
+      status.textContent = "Saving…";
+      status.className   = "save-status saving";
+      try {
+        await savePhase2Picks(currentUser, knockoutPicks);
+        hasUnsaved = false;
+        status.textContent = "✓ Bracket saved!";
+        status.className   = "save-status saved";
+        setTimeout(() => {
+          if (!hasUnsaved) document.getElementById("saveBar").style.display = "none";
+        }, 3000);
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Save failed — try again";
+        status.className   = "save-status error";
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    window.addEventListener("beforeunload", e => {
+      if (hasUnsaved && !isLocked) { e.preventDefault(); e.returnValue = ""; }
+    });
+
+    // ── Init ──
+    async function init() {
+      const user = getSessionUser();
+      if (!user) { window.location.href = "index.html"; return; }
+      currentUser = user;
+      document.getElementById("userChip").textContent = user;
+
+      try {
+        const [config, picks, results] = await Promise.all([
+          getTournamentConfig(),
+          getUserPicks(user),
+          getAllResults(),
+        ]);
+
+        liveResults = results || {};
+
+        // Gate: Phase 1 must be locked first
+        if (!config.phase1Locked) {
+          document.getElementById("loadingState").style.display   = "none";
+          document.getElementById("waitingContent").style.display = "block";
+          return;
+        }
+
+        isLocked = !!config.phase2Locked;
+
+        if (picks?.knockoutPicks) {
+          knockoutPicks = picks.knockoutPicks;
+        }
+
+        // Render
+        renderBracket();
+        updateProgress();
+
+        // Banners
+        if (isLocked) {
+          document.getElementById("lockedBanner").style.display = "flex";
+          document.getElementById("saveBar").style.display       = "none";
+        } else {
+          const banner = document.getElementById("phaseBanner");
+          banner.style.display = "flex";
+          banner.className     = "phase-banner open";
+          const picked = Object.keys(knockoutPicks).length;
+          document.getElementById("phaseBannerText").textContent = picked > 0
+            ? `Bracket open — ${picked}/32 matches picked. Save before Round of 32 kicks off!`
+            : "Bracket picks are open! Predict every knockout match from Round of 32 to the Final.";
+
+          if (picked > 0) {
+            document.getElementById("saveBar").style.display   = "flex";
+            document.getElementById("saveStatus").textContent  = "Picks loaded — save to update";
+            document.getElementById("saveStatus").className    = "save-status";
+          }
+        }
+
+        document.getElementById("loadingState").style.display = "none";
+        document.getElementById("mainContent").style.display  = "block";
+
+      } catch (err) {
+        console.error("Init error:", err);
+        document.getElementById("loadingState").innerHTML = `
+          <div style="text-align:center;color:var(--error)">
+            <div style="font-size:1.5rem;margin-bottom:.5rem">⚠️</div>
+            Failed to load bracket. <a href="bracket.html" style="color:var(--green);text-decoration:underline">Refresh</a>
+          </div>
+        `;
+      }
+    }
+
+    init();
+  </script>
+
+</body>
+</html>
