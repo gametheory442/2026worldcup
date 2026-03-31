@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Picks — WC2026 Family Bracket</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="style.css" />
   <style>
     /* ── Picks-page specific overrides & extras ── */
 
@@ -412,14 +412,14 @@
   </div>
 
   <!-- data.js has no ES exports — load as classic script so globals are available -->
-  <script src="js/data.js"></script>
+  <script src="data.js"></script>
   <script type="module">
     import {
       getSessionUser,
       getUserPicks,
       savePhase1Picks,
       getTournamentConfig,
-    } from "./js/firebase.js";
+    } from "./firebase.js";
 
     // data.js globals: TOURNAMENT_DATA, getGroupTeams, getGroupMatches, getTeamFlag, getTeamDisplayName
     /* global TOURNAMENT_DATA, getGroupTeams, getGroupMatches, getTeamFlag, getTeamDisplayName */

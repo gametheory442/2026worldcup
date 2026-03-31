@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="style.css" />
   <style>
     /* ── Leaderboard-specific styles ── */
 
@@ -595,7 +595,7 @@
         </div>
       </div>
       <p style="font-size:.75rem;color:var(--muted);margin-top:.85rem;">
-        Maximum possible score: <strong style="color:var(--dark)">287 pts</strong> (all 72 group matches + all 16 knockout matches + champion bonus).
+        Maximum possible score: <strong style="color:var(--dark)">305 pts</strong> (all 72 group matches + all 16 knockout matches + champion bonus).
         Picks lock at first kickoff on June 11 at 3 PM ET.
       </p>
     </div>
@@ -611,16 +611,15 @@
   </div>
 
   <!-- data.js as classic script for globals -->
-  <script src="js/data.js"></script>
+  <script src="data.js"></script>
   <script type="module">
     import {
       getSessionUser,
       getAllPicks,
       getAllResults,
       getAllUsers,
-      getTournamentConfig,
       calculateScores,
-    } from "./js/firebase.js";
+    } from "./firebase.js";
 
     /* global TOURNAMENT_DATA, getTeamFlag */
 
