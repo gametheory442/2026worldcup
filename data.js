@@ -4,7 +4,7 @@
 // UPDATE: Replace TBD placeholders after March 31 playoff finals
 // =============================================================
 
-export const TOURNAMENT_DATA = {
+const TOURNAMENT_DATA = {
 
   teams: {
     "Mexico":                    { group: "A", flag: "🇲🇽", confederation: "CONCACAF", pot: 1, host: true },
@@ -258,12 +258,12 @@ export const TOURNAMENT_DATA = {
 };
 
 // ── Helpers ──
-export function getGroupTeams(g)    { return TOURNAMENT_DATA.groups[g].teams; }
-export function getGroupMatches(g)  { return TOURNAMENT_DATA.groupMatches.filter(m => m.group === g); }
-export function getAllTeams()        { return Object.keys(TOURNAMENT_DATA.teams); }
-export function getConfirmedTeams() { return Object.keys(TOURNAMENT_DATA.teams).filter(t => !TOURNAMENT_DATA.teams[t].tbd); }
-export function getTeamFlag(key)    { return TOURNAMENT_DATA.teams[key]?.flag ?? "🏳️"; }
-export function shortName(key)      { return key.replace("UEFA Path ","Path ").replace("Intercontinental Path ","IC Path "); }
-export function formatMatchDate(dateStr) {
+function getGroupTeams(g)    { return TOURNAMENT_DATA.groups[g].teams; }
+function getGroupMatches(g)  { return TOURNAMENT_DATA.groupMatches.filter(m => m.group === g); }
+function getAllTeams()        { return Object.keys(TOURNAMENT_DATA.teams); }
+function getConfirmedTeams() { return Object.keys(TOURNAMENT_DATA.teams).filter(t => !TOURNAMENT_DATA.teams[t].tbd); }
+function getTeamFlag(key)    { return TOURNAMENT_DATA.teams[key]?.flag ?? "🏳️"; }
+function shortName(key)      { return key.replace("UEFA Path ","Path ").replace("Intercontinental Path ","IC Path "); }
+function formatMatchDate(dateStr) {
   return new Date(dateStr + "T12:00:00").toLocaleDateString("en-US", { month:"short", day:"numeric" });
 }
