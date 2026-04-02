@@ -432,6 +432,29 @@
     .lb-table tbody tr:nth-child(9)  { animation-delay: .36s; }
     .lb-table tbody tr:nth-child(10) { animation-delay: .40s; }
 
+    /* Sign-out button */
+    .signout-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      font-family: var(--font-body);
+      font-size: .72rem;
+      font-weight: 600;
+      color: rgba(255,255,255,.7);
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 999px;
+      padding: .25rem .65rem;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .signout-btn:hover {
+      background: rgba(255,255,255,.15);
+      color: #fff;
+      border-color: rgba(255,255,255,.45);
+    }
+
     /* ── Responsive ── */
     @media (max-width: 700px) {
       .podium-avatar.rank-1 { width: 52px; height: 52px; font-size: 1.1rem; }
@@ -467,6 +490,10 @@
       <a href="bracket.html">Bracket</a>
       <a href="leaderboard.html" style="color:#fff;font-weight:700;">Standings</a>
       <span class="user-chip" id="userChip">—</span>
+      <button class="signout-btn" id="signoutBtn" title="Sign out">
+        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign out
+      </button>
     </nav>
   </header>
 
@@ -615,6 +642,7 @@
   <script type="module">
     import {
       getSessionUser,
+      clearSessionUser,
       getAllPicks,
       getAllResults,
       getAllUsers,
@@ -881,6 +909,15 @@
         document.getElementById("userChip").textContent = currentUser;
       } else {
         document.getElementById("userChip").textContent = "Guest";
+      }
+
+      // Sign-out (only wire if logged in)
+      document.getElementById("signoutBtn").addEventListener("click", () => {
+        clearSessionUser();
+        window.location.href = "index.html";
+      });
+      if (!currentUser) {
+        document.getElementById("signoutBtn").style.display = "none";
       }
 
       await loadLeaderboard();
