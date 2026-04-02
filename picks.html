@@ -6,396 +6,344 @@
   <title>My Picks — WC2026 Family Bracket</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* ── Picks-page specific overrides & extras ── */
+    /* ── Picks-page: Group Standings Predictor ── */
 
-    /* Sticky group tab bar */
+    .signout-btn {
+      display: inline-flex; align-items: center; gap: .3rem;
+      font-family: var(--font-body); font-size: .72rem; font-weight: 600;
+      color: rgba(255,255,255,.7); background: transparent;
+      border: 1px solid rgba(255,255,255,.25); border-radius: 999px;
+      padding: .25rem .65rem; cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .signout-btn:hover { background: rgba(255,255,255,.15); color: #fff; border-color: rgba(255,255,255,.45); }
+
+    /* ── Sticky group nav ── */
     .group-tab-bar {
-      position: sticky;
-      top: 54px; /* below site-header */
-      z-index: 100;
-      background: var(--bg);
-      padding: .6rem 0 .5rem;
+      position: sticky; top: 54px; z-index: 100;
+      background: var(--bg); padding: .6rem 0 .5rem;
       border-bottom: 1px solid var(--border);
-      margin: 0 -1rem 1.25rem;
-      padding-left: 1rem;
-      padding-right: 1rem;
+      margin: 0 -1rem 1.5rem; padding-left: 1rem; padding-right: 1rem;
     }
 
-    /* Group header inside card */
-    .group-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1rem;
+    /* ── Group card ── */
+    .group-card {
+      background: var(--white); border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+      overflow: hidden; margin-bottom: 1.25rem;
+    }
+    .group-card-header {
+      display: flex; align-items: center; gap: .85rem;
+      padding: 1.1rem 1.25rem;
+      background: linear-gradient(135deg, var(--green-dark), var(--green));
+      color: #fff;
+    }
+    .group-letter {
+      font-family: var(--font-head); font-size: 2rem; font-weight: 700;
+      line-height: 1; color: rgba(255,255,255,.95); letter-spacing: -.02em;
+      min-width: 36px;
+    }
+    .group-header-info { flex: 1; min-width: 0; }
+    .group-header-title {
+      font-family: var(--font-head); font-size: .9rem; font-weight: 600;
+      letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,.9);
+      margin-bottom: .2rem;
+    }
+    .group-header-teams {
+      font-size: .73rem; color: rgba(255,255,255,.65); line-height: 1.45;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .group-complete-pill {
+      display: inline-flex; align-items: center; gap: .3rem;
+      background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.35);
+      color: #fff; font-size: .68rem; font-weight: 700;
+      font-family: var(--font-head); letter-spacing: .07em; text-transform: uppercase;
+      padding: .25rem .65rem; border-radius: 999px; flex-shrink: 0;
+    }
+
+    /* ── Scoring legend inside card ── */
+    .standings-legend {
+      display: flex; gap: .35rem; padding: .65rem 1.25rem;
+      border-bottom: 1px solid var(--border); background: var(--bg);
       flex-wrap: wrap;
-      gap: .5rem;
     }
-    .group-header-left {
-      display: flex;
-      align-items: center;
-      gap: .65rem;
+    .legend-item {
+      display: flex; align-items: center; gap: .3rem;
+      font-size: .7rem; color: var(--muted);
     }
-    .group-letter-badge {
-      font-family: var(--font-head);
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: var(--white);
-      background: var(--green);
-      width: 42px;
-      height: 42px;
-      border-radius: var(--radius);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      letter-spacing: .02em;
-      flex-shrink: 0;
+    .legend-pts {
+      font-family: var(--font-head); font-size: .7rem; font-weight: 700;
+      color: var(--green); background: var(--green-light);
+      padding: .1rem .38rem; border-radius: 3px; flex-shrink: 0;
     }
-    .group-teams-list {
-      font-size: .78rem;
-      color: var(--muted);
-      line-height: 1.55;
+    .legend-sep { color: var(--border); margin: 0 .1rem; }
+
+    /* ── Drag list ── */
+    .standings-list {
+      padding: .5rem .75rem .75rem;
     }
-    .group-teams-list strong {
-      color: var(--text);
-      font-weight: 600;
-    }
-    .group-complete-badge {
-      font-size: .72rem;
-      font-weight: 700;
-      font-family: var(--font-head);
-      letter-spacing: .06em;
-      color: var(--success);
-      background: #DCFCE7;
-      border: 1px solid #BBF7D0;
-      padding: .2rem .65rem;
-      border-radius: 999px;
-      text-transform: uppercase;
+    .standings-hint {
+      font-size: .72rem; color: var(--muted); padding: .5rem 0 .6rem;
+      display: flex; align-items: center; gap: .4rem;
     }
 
-    /* Match rows */
-    .matches-block { }
-    .match-row {
+    .rank-row {
       display: grid;
-      grid-template-columns: 80px 1fr;
-      align-items: start;
-      gap: .75rem;
-      padding: .85rem 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .match-row:last-child { border-bottom: none; }
-
-    .match-meta { padding-top: .1rem; }
-    .match-num {
-      font-family: var(--font-head);
-      font-size: .72rem;
-      font-weight: 600;
-      letter-spacing: .06em;
-      color: var(--green);
-      text-transform: uppercase;
-    }
-    .match-info {
-      font-size: .68rem;
-      color: var(--muted);
-      line-height: 1.5;
-      margin-top: .15rem;
-    }
-
-    /* Picker */
-    .match-picker {
-      display: flex;
-      gap: .3rem;
-    }
-    .pick-radio { display: none; }
-    .pick-label {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: .2rem;
-      padding: .5rem .3rem;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      font-size: .74rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: border-color .13s, background .13s, color .13s;
-      text-align: center;
-      min-width: 0;
-      user-select: none;
-      line-height: 1.3;
-    }
-    .pick-label .flag { font-size: 1.1rem; line-height: 1; }
-    .pick-label .name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      width: 100%;
-      text-align: center;
-      font-size: .7rem;
-    }
-    .pick-label.draw {
-      flex: 0 0 50px;
-      font-size: .68rem;
-      color: var(--muted);
-    }
-    .pick-label:hover {
-      border-color: var(--green);
-      background: var(--green-light);
-      color: var(--green);
-    }
-    .pick-label.draw:hover {
-      border-color: var(--muted);
-      background: #F3F4F6;
-      color: var(--dark);
-    }
-    .pick-radio:checked + .pick-label {
-      background: var(--green);
-      border-color: var(--green-dark);
-      color: #fff;
-      font-weight: 700;
-    }
-    .pick-radio:checked + .pick-label.draw {
-      background: var(--muted);
-      border-color: #555;
-      color: #fff;
-    }
-
-    /* TBD team styling */
-    .pick-label.tbd-team {
-      font-style: italic;
-      font-size: .66rem;
-    }
-
-    /* Matchday separator */
-    .matchday-label {
-      font-family: var(--font-head);
-      font-size: .68rem;
-      font-weight: 600;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      padding: .4rem 0 .2rem;
-      display: flex;
-      align-items: center;
-      gap: .5rem;
-    }
-    .matchday-label::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-    /* Winner section */
-    .winner-section { margin-top: 2rem; }
-    .winner-section .card-title {
-      color: var(--gold-dark);
-    }
-    .winner-section .card-title svg { color: var(--gold); }
-
-    .winner-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: .4rem;
-      max-height: 280px;
-      overflow-y: auto;
-      padding: .3rem;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--bg);
-    }
-    .winner-radio { display: none; }
-    .winner-label {
-      display: flex;
-      align-items: center;
-      gap: .45rem;
-      padding: .45rem .65rem;
+      grid-template-columns: 28px 32px 1fr auto;
+      align-items: center; gap: .6rem;
+      padding: .55rem .65rem;
       background: var(--white);
       border: 1.5px solid var(--border);
       border-radius: var(--radius);
-      font-size: .8rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all .13s;
+      margin-bottom: .4rem;
+      cursor: grab;
+      transition: border-color .15s, box-shadow .15s, background .15s, transform .15s, opacity .15s;
       user-select: none;
+      position: relative;
+    }
+    .rank-row:last-child { margin-bottom: 0; }
+    .rank-row:hover { border-color: var(--green-mid); box-shadow: var(--shadow-sm); }
+    .rank-row.dragging {
+      opacity: .45; cursor: grabbing;
+      box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    }
+    .rank-row.drag-over {
+      border-color: var(--green);
+      background: var(--green-light);
+      transform: scale(1.01);
+    }
+    .rank-row.rank-1-style { border-left: 3px solid var(--gold); }
+    .rank-row.rank-2-style { border-left: 3px solid #9CA3AF; }
+    .rank-row.rank-3-style { border-left: 3px solid #C4996E; }
+    .rank-row.rank-4-style { border-left: 3px solid var(--border); opacity: .75; }
+
+    .drag-handle {
+      display: flex; flex-direction: column; gap: 2.5px;
+      align-items: center; justify-content: center;
+      color: var(--border); padding: .2rem; flex-shrink: 0;
+      transition: color .15s;
+    }
+    .rank-row:hover .drag-handle { color: var(--muted); }
+    .drag-handle-dot { width: 3px; height: 3px; border-radius: 50%; background: currentColor; }
+    .drag-handle-row { display: flex; gap: 3px; }
+
+    .rank-number {
+      font-family: var(--font-head); font-size: .85rem; font-weight: 700;
+      text-align: center; line-height: 1;
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background .2s, color .2s;
+    }
+    .rank-number.pos-1 { background: var(--gold); color: #fff; }
+    .rank-number.pos-2 { background: #9CA3AF; color: #fff; }
+    .rank-number.pos-3 { background: #C4996E; color: #fff; }
+    .rank-number.pos-4 { background: var(--bg); color: var(--muted); border: 1.5px solid var(--border); font-size: .75rem; }
+
+    .team-info {
+      display: flex; align-items: center; gap: .55rem;
+      min-width: 0;
+    }
+    .team-flag { font-size: 1.15rem; flex-shrink: 0; line-height: 1; }
+    .team-name-text {
+      font-size: .85rem; font-weight: 600; color: var(--dark);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .team-name-text.tbd { font-style: italic; color: var(--muted); font-size: .78rem; }
+    .rank-pts-badge {
+      font-family: var(--font-head); font-size: .68rem; font-weight: 700;
+      color: var(--muted); background: var(--bg);
+      border: 1px solid var(--border);
+      padding: .15rem .45rem; border-radius: 3px; flex-shrink: 0;
+      white-space: nowrap; transition: background .2s, color .2s, border-color .2s;
+    }
+    .rank-row.rank-1-style .rank-pts-badge { color: var(--gold-dark); background: var(--gold-light); border-color: var(--gold); }
+    .rank-row.rank-2-style .rank-pts-badge { color: #4B5563; background: #F3F4F6; border-color: #D1D5DB; }
+
+    /* Advance indicator */
+    .advance-divider {
+      display: flex; align-items: center; gap: .5rem;
+      padding: .35rem .65rem; margin: .4rem 0;
+      font-size: .65rem; font-weight: 700; font-family: var(--font-head);
+      letter-spacing: .08em; text-transform: uppercase;
+    }
+    .advance-divider.advances { color: var(--success); }
+    .advance-divider.eliminated { color: var(--error); }
+    .advance-divider::before, .advance-divider::after {
+      content: ''; flex: 1; height: 1px;
+    }
+    .advance-divider.advances::before,
+    .advance-divider.advances::after { background: #BBF7D0; }
+    .advance-divider.eliminated::before,
+    .advance-divider.eliminated::after { background: #FECACA; }
+
+    /* ── Mobile dropdown fallback ── */
+    .standings-dropdowns { display: none; padding: .5rem .75rem .75rem; gap: .5rem; flex-direction: column; }
+    .standings-dropdown-row {
+      display: grid; grid-template-columns: 26px 1fr; align-items: center; gap: .6rem;
+    }
+    .pos-label {
+      font-family: var(--font-head); font-size: .8rem; font-weight: 700;
+      text-align: center; width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .pos-label.pos-1 { background: var(--gold); color: #fff; }
+    .pos-label.pos-2 { background: #9CA3AF; color: #fff; }
+    .pos-label.pos-3 { background: #C4996E; color: #fff; }
+    .pos-label.pos-4 { background: var(--bg); color: var(--muted); border: 1.5px solid var(--border); font-size: .72rem; }
+    .pos-select {
+      width: 100%; padding: .5rem .75rem;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-family: var(--font-body); font-size: .85rem; color: var(--text);
+      background: var(--white); outline: none; cursor: pointer;
+      transition: border-color .15s;
+    }
+    .pos-select:focus { border-color: var(--green); }
+    .pos-select.has-value { border-color: var(--green-mid); background: var(--green-light); }
+
+    /* ── Group nav ── */
+    .group-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .75rem 1.25rem; border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .group-nav .btn-ghost { font-size: .8rem; }
+
+    /* ── Winner section ── */
+    .winner-section .card-title { color: var(--gold-dark); }
+
+    .winner-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: .4rem; max-height: 280px; overflow-y: auto;
+      padding: .3rem; border: 1.5px solid var(--border);
+      border-radius: var(--radius); background: var(--bg);
+    }
+    .winner-radio { display: none; }
+    .winner-label {
+      display: flex; align-items: center; gap: .45rem;
+      padding: .45rem .65rem; background: var(--white);
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: .8rem; font-weight: 500; cursor: pointer;
+      transition: all .13s; user-select: none;
     }
     .winner-label .flag { font-size: .95rem; flex-shrink: 0; }
     .winner-label .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .winner-label:hover { border-color: var(--gold); background: var(--gold-light); }
-    .winner-radio:checked + .winner-label {
-      background: var(--gold);
-      border-color: var(--gold-dark);
-      color: #fff;
-      font-weight: 700;
-    }
+    .winner-radio:checked + .winner-label { background: var(--gold); border-color: var(--gold-dark); color: #fff; font-weight: 700; }
     .winner-label.tbd-team { font-style: italic; color: var(--muted); }
 
     .winner-selected-display {
-      display: flex;
-      align-items: center;
-      gap: .75rem;
-      margin-top: .85rem;
-      padding: .75rem 1rem;
-      background: var(--gold-light);
-      border: 1.5px solid var(--gold);
-      border-radius: var(--radius);
-      font-weight: 600;
-      font-size: .9rem;
-      transition: opacity .2s;
+      display: flex; align-items: center; gap: .75rem;
+      margin-top: .85rem; padding: .75rem 1rem;
+      background: var(--gold-light); border: 1.5px solid var(--gold);
+      border-radius: var(--radius); font-weight: 600; font-size: .9rem;
     }
     .winner-selected-display.hidden { display: none; }
     .winner-selected-display .flag { font-size: 1.5rem; }
-    .winner-pts {
-      margin-left: auto;
-      font-size: .75rem;
-      color: var(--gold-dark);
-      font-weight: 500;
-    }
+    .winner-pts { margin-left: auto; font-size: .75rem; color: var(--gold-dark); font-weight: 500; }
 
     /* Progress */
     .progress-summary {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: .82rem;
-      color: var(--muted);
-      margin-bottom: .35rem;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: .82rem; color: var(--muted); margin-bottom: .35rem;
     }
     .progress-summary strong { color: var(--green); }
 
-    /* Nav arrows between groups */
-    .group-nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: .5rem;
-      padding-top: .75rem;
-      border-top: 1px solid var(--border);
-    }
-    .group-nav .btn-ghost { font-size: .8rem; }
-
-    /* Locked state overlay */
+    /* Locked */
     .locked-banner {
-      display: flex;
-      align-items: center;
-      gap: .75rem;
-      padding: 1rem 1.25rem;
-      background: #FEF2F2;
-      border: 1px solid #FECACA;
-      border-radius: var(--radius-lg);
-      margin-bottom: 1.25rem;
-      font-size: .875rem;
-      color: #B91C1C;
-      font-weight: 500;
+      display: flex; align-items: flex-start; gap: .85rem;
+      padding: 1rem 1.25rem; background: #FEF2F2;
+      border: 1px solid #FECACA; border-radius: var(--radius-lg);
+      margin-bottom: 1.25rem; font-size: .875rem; color: #B91C1C; font-weight: 500;
     }
-    .locked-banner svg { flex-shrink: 0; }
-
-    /* Save bar status states */
     .save-status { font-size: .83rem; color: var(--muted); }
     .save-status.saving { color: var(--warning); }
     .save-status.saved  { color: var(--success); font-weight: 600; }
     .save-status.error  { color: var(--error); }
 
-    /* Sign-out button */
-    .signout-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: .3rem;
-      font-family: var(--font-body);
-      font-size: .72rem;
-      font-weight: 600;
-      color: rgba(255,255,255,.7);
-      background: transparent;
-      border: 1px solid rgba(255,255,255,.25);
-      border-radius: 999px;
-      padding: .25rem .65rem;
-      cursor: pointer;
-      transition: all .15s;
-      white-space: nowrap;
+    /* Scoring guide */
+    .scoring-table {
+      width: 100%; border-collapse: collapse; font-size: .82rem;
     }
-    .signout-btn:hover {
-      background: rgba(255,255,255,.15);
-      color: #fff;
-      border-color: rgba(255,255,255,.45);
+    .scoring-table th {
+      font-family: var(--font-head); font-size: .68rem; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+      padding: .4rem .75rem; border-bottom: 1.5px solid var(--border); text-align: left;
+    }
+    .scoring-table td { padding: .55rem .75rem; border-bottom: 1px solid var(--border); }
+    .scoring-table tr:last-child td { border-bottom: none; }
+    .scoring-table .pts { font-family: var(--font-head); font-weight: 700; color: var(--green); text-align: right; }
+    .scoring-table .pts.gold { color: var(--gold-dark); }
+
+    /* Advance info */
+    .advance-info {
+      display: inline-flex; align-items: center; gap: .3rem;
+      font-size: .7rem; color: var(--muted); margin-top: .4rem;
     }
 
-    /* Responsive */
+    @media (max-width: 560px) {
+      .standings-list { display: none; }
+      .standings-dropdowns { display: flex; }
+    }
     @media (max-width: 620px) {
-      .match-row { grid-template-columns: 70px 1fr; gap: .5rem; }
-      .pick-label { font-size: .66rem; padding: .45rem .15rem; }
-      .pick-label .flag { font-size: .95rem; }
-      .pick-label.draw { flex: 0 0 40px; font-size: .62rem; }
-      .winner-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+      .group-header-teams { display: none; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ── Header ── -->
   <header class="site-header">
-    <div class="site-logo">
-      <span>⚽</span> WC2026 Bracket
-    </div>
+    <div class="site-logo"><span>⚽</span> WC2026 Bracket</div>
     <nav class="site-nav">
       <a href="picks.html">Picks</a>
       <a href="bracket.html">Bracket</a>
       <a href="leaderboard.html">Standings</a>
       <span class="user-chip" id="userChip">—</span>
-      <button class="signout-btn" id="signoutBtn" title="Sign out">
+      <button class="signout-btn" id="signoutBtn">
         <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Sign out
       </button>
     </nav>
   </header>
 
-  <!-- ── Main ── -->
   <main class="main" id="mainContent" style="display:none">
 
-    <!-- Page header -->
     <div class="page-header">
-      <div class="page-title">⚽ My Group Stage Picks</div>
-      <div class="page-subtitle">Pick the winner (or draw) for all 72 group matches, then choose your tournament champion.</div>
+      <div class="page-title">⚽ Predict Group Standings</div>
+      <div class="page-subtitle">Drag teams into your predicted finishing order for all 12 groups, then pick your tournament champion.</div>
     </div>
 
-    <!-- Phase banner -->
     <div id="phaseBanner" class="phase-banner open" style="display:none">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
       <span id="phaseBannerText"></span>
     </div>
 
-    <!-- Locked banner -->
     <div id="lockedBanner" class="locked-banner" style="display:none">
       <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       <div>
-        <strong>Picks are locked.</strong> The group stage has kicked off — picks can no longer be changed. Check the <a href="leaderboard.html" style="color:inherit;text-decoration:underline">leaderboard</a> to track your score!
+        <strong>Picks are locked.</strong> The group stage has kicked off — predictions can no longer be changed.
+        Check the <a href="leaderboard.html" style="color:inherit;text-decoration:underline">leaderboard</a> to track your score!
       </div>
     </div>
 
-    <!-- Progress bar -->
+    <!-- Progress -->
     <div class="card" style="padding:1rem 1.25rem; margin-bottom:1rem;">
       <div class="progress-summary">
-        <span>Group matches picked: <strong id="pickCount">0</strong> / 72</span>
-        <span id="winnerStatus" style="color:var(--muted)">No winner selected</span>
+        <span>Groups ranked: <strong id="pickCount">0</strong> / 12</span>
+        <span id="winnerStatus" style="color:var(--muted)">No champion selected</span>
       </div>
       <div class="progress-bar">
         <div class="progress-fill" id="progressFill" style="width:0%"></div>
       </div>
     </div>
 
-    <!-- ── Group tab bar (sticky) ── -->
+    <!-- Group tabs -->
     <div class="group-tab-bar">
-      <div class="group-tabs" id="groupTabs">
-        <!-- Rendered by JS -->
-      </div>
+      <div class="group-tabs" id="groupTabs"></div>
     </div>
 
-    <!-- ── Group card (one shown at a time) ── -->
-    <div id="groupCard" class="card">
-      <!-- Rendered by JS -->
-    </div>
+    <!-- Group card -->
+    <div id="groupCard"></div>
 
-    <!-- ── Tournament Winner section ── -->
+    <!-- Tournament winner -->
     <div class="winner-section">
       <div class="card">
         <div class="card-title">
@@ -403,13 +351,9 @@
           🏆 Tournament Winner
         </div>
         <p style="font-size:.85rem;color:var(--muted);margin-bottom:.85rem;">
-          Who will lift the trophy on July 19 at MetLife Stadium? <strong style="color:var(--gold-dark)">+15 points</strong> if you're right.
+          Who lifts the trophy on July 19 at MetLife Stadium? <strong style="color:var(--gold-dark)">+15 points</strong> if you're right.
         </p>
-
-        <div class="winner-grid" id="winnerGrid">
-          <!-- Rendered by JS -->
-        </div>
-
+        <div class="winner-grid" id="winnerGrid"></div>
         <div class="winner-selected-display hidden" id="winnerDisplay">
           <span class="flag" id="winnerDisplayFlag"></span>
           <div>
@@ -421,15 +365,36 @@
       </div>
     </div>
 
+    <!-- Scoring guide -->
+    <div class="card">
+      <div class="card-title">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        How Group Stage Scoring Works
+      </div>
+      <table class="scoring-table">
+        <thead>
+          <tr><th>Prediction</th><th class="pts" style="text-align:right">Points</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Exact finishing position (1st, 2nd, 3rd, or 4th)</td><td class="pts">+3</td></tr>
+          <tr><td>Correctly predicted team advances (top 2)</td><td class="pts">+1</td></tr>
+          <tr><td>Correctly predicted team eliminated (bottom 2)</td><td class="pts">+1</td></tr>
+          <tr><td>Tournament champion (pre-tournament pick)</td><td class="pts gold">+15</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:.75rem;color:var(--muted);margin-top:.75rem;">
+        Max group stage score: <strong style="color:var(--dark)">96 pts</strong> (12 groups × 4 teams × up to 2 pts per team slot).
+        Picks lock at the first kickoff on <strong>June 11 at 3 PM ET</strong>.
+      </p>
+    </div>
+
   </main>
 
-  <!-- ── Loading state ── -->
   <div class="loading-state" id="loadingState">
     <div class="spinner"></div>
     Loading your picks…
   </div>
 
-  <!-- ── Sticky save bar ── -->
   <div class="save-bar" id="saveBar" style="display:none">
     <div class="save-status" id="saveStatus">Unsaved changes</div>
     <button class="btn btn-primary" id="saveBtn" onclick="savePicks()">
@@ -438,208 +403,269 @@
     </button>
   </div>
 
-  <!-- data.js has no ES exports — load as classic script so globals are available -->
   <script src="data.js"></script>
   <script type="module">
     import {
-      getSessionUser,
-      clearSessionUser,
-      getUserPicks,
-      savePhase1Picks,
-      getTournamentConfig,
+      getSessionUser, clearSessionUser,
+      getUserPicks, savePhase1Picks, getTournamentConfig,
     } from "./firebase.js";
 
-    // data.js globals: TOURNAMENT_DATA, getGroupTeams, getGroupMatches, getTeamFlag, getTeamDisplayName
-    /* global TOURNAMENT_DATA, getGroupTeams, getGroupMatches, getTeamFlag, getTeamDisplayName */
-
-    // ── State ──
-    let currentUser   = null;
-    let currentGroup  = "A";
-    let groupPicks    = {};   // { match_1: "Mexico" | "draw" | "South Africa", ... }
-    let winnerPick    = null; // team name string
-    let isLocked      = false;
-    let hasUnsaved    = false;
+    /* global TOURNAMENT_DATA, getGroupTeams, getGroupMatches, getTeamFlag */
 
     const GROUPS = ["A","B","C","D","E","F","G","H","I","J","K","L"];
 
-    // ── Short display name helper ──
+    // groupStandings: { A: ["Mexico","South Africa","South Korea","UEFA Path D"], ... }
+    // Each group either has a full 4-team array or is undefined/missing
+    let groupStandings = {};
+    let winnerPick     = null;
+    let currentGroup   = "A";
+    let isLocked       = false;
+    let currentUser    = null;
+    let hasUnsaved     = false;
+
+    // Drag state
+    let dragSrc = null;
+
+    // ── Helpers ──
     function shortName(key) {
-      const map = {
-        "United States":           "USA",
-        "South Africa":            "S. Africa",
-        "South Korea":             "S. Korea",
-        "Saudi Arabia":            "Saudi Arabia",
-        "New Zealand":             "New Zealand",
-        "Ivory Coast":             "Ivory Coast",
-        "Cape Verde":              "Cape Verde",
-        "UEFA Path A":             "UEFA A",
-        "UEFA Path B":             "UEFA B",
-        "UEFA Path C":             "UEFA C",
-        "UEFA Path D":             "UEFA D",
-        "Intercontinental Path 1": "IC Path 1",
-        "Intercontinental Path 2": "IC Path 2",
+      const m = {
+        "United States":"USA","South Africa":"S. Africa","South Korea":"S. Korea",
+        "UEFA Path A":"UEFA A","UEFA Path B":"UEFA B","UEFA Path C":"UEFA C","UEFA Path D":"UEFA D",
+        "Intercontinental Path 1":"IC Path 1","Intercontinental Path 2":"IC Path 2",
       };
-      return map[key] || key;
+      return m[key] || key;
     }
 
-    // ── Date formatter ──
-    function fmtDate(str) {
-      const d = new Date(str + "T12:00:00");
-      return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    function isTBD(key) { return TOURNAMENT_DATA.teams[key]?.tbd === true; }
+
+    function isGroupComplete(g) {
+      return Array.isArray(groupStandings[g]) && groupStandings[g].length === 4;
     }
 
-    // ── Check if team is TBD ──
-    function isTBD(key) {
-      return TOURNAMENT_DATA.teams[key]?.tbd === true;
+    function countComplete() {
+      return GROUPS.filter(g => isGroupComplete(g)).length;
     }
 
-    // ── Build group tabs ──
+    // ── Tabs ──
     function renderGroupTabs() {
-      const container = document.getElementById("groupTabs");
-      container.innerHTML = GROUPS.map(g => {
-        const matches  = getGroupMatches(g);
-        const total    = matches.length;
-        const picked   = matches.filter(m => groupPicks[m.id] !== undefined).length;
-        const complete  = picked === total;
+      const el = document.getElementById("groupTabs");
+      el.innerHTML = GROUPS.map(g => {
+        const complete = isGroupComplete(g);
         const active   = g === currentGroup;
         let cls = "group-tab";
-        if (active)    cls += " active";
-        if (complete)  cls += " complete";
-        return `<button class="${cls}" onclick="switchGroup('${g}')" title="Group ${g}: ${picked}/${total} picked">
-          ${g}
-        </button>`;
+        if (active)   cls += " active";
+        if (complete) cls += " complete";
+        return `<button class="${cls}" onclick="switchGroup('${g}')" title="Group ${g}">${g}</button>`;
       }).join("");
     }
 
-    // ── Build group card ──
+    // ── Group card ──
     function renderGroupCard() {
-      const matches = getGroupMatches(currentGroup);
       const teams   = getGroupTeams(currentGroup);
-      const teamObjs = teams.map(t => ({
-        key:  t,
-        flag: getTeamFlag(t),
-        name: shortName(t),
-        tbd:  isTBD(t),
-      }));
-      const picked  = matches.filter(m => groupPicks[m.id]).length;
-      const total   = matches.length;
+      const ordered = groupStandings[currentGroup] ? [...groupStandings[currentGroup]] : [...teams];
 
-      // Group into matchdays
-      const byMatchday = { 1: [], 2: [], 3: [] };
-      matches.forEach(m => { byMatchday[m.matchday].push(m); });
+      const teamNames = teams.map(t => shortName(t)).join(" · ");
 
-      let html = `
-        <div class="group-header">
-          <div class="group-header-left">
-            <div class="group-letter-badge">G${currentGroup}</div>
-            <div class="group-teams-list">
-              <strong>Group ${currentGroup}</strong><br>
-              ${teamObjs.map(t => `${t.flag} ${t.name}`).join(" · ")}
+      const POSITION_PTS = ["+3 exact", "+1 advance", "+1 elim", "+1 elim"];
+
+      const rankRows = ordered.map((team, idx) => {
+        const pos     = idx + 1;
+        const posClass = `rank-${pos}-style`;
+        const numClass = `pos-${pos}`;
+        const flag     = getTeamFlag(team);
+        const name     = shortName(team);
+        const tbdCls   = isTBD(team) ? " tbd" : "";
+        const ptsLabel = POSITION_PTS[idx];
+
+        return `
+          <div class="rank-row ${posClass}" data-group="${currentGroup}" data-team="${team}"
+               draggable="${isLocked ? 'false' : 'true'}"
+               ondragstart="onDragStart(event)" ondragover="onDragOver(event)"
+               ondrop="onDrop(event)" ondragend="onDragEnd(event)">
+            <div class="drag-handle" title="Drag to reorder">
+              <div class="drag-handle-row"><div class="drag-handle-dot"></div><div class="drag-handle-dot"></div></div>
+              <div class="drag-handle-row"><div class="drag-handle-dot"></div><div class="drag-handle-dot"></div></div>
+              <div class="drag-handle-row"><div class="drag-handle-dot"></div><div class="drag-handle-dot"></div></div>
             </div>
+            <div class="rank-number ${numClass}">${pos}</div>
+            <div class="team-info">
+              <span class="team-flag">${flag}</span>
+              <span class="team-name-text${tbdCls}">${name}</span>
+            </div>
+            <span class="rank-pts-badge">${ptsLabel}</span>
           </div>
-          ${picked === total ? `<span class="group-complete-badge">✓ Complete</span>` : `<span style="font-size:.78rem;color:var(--muted)">${picked}/${total} picked</span>`}
-        </div>
-        <div class="matches-block">
-      `;
+          ${pos === 2 ? `<div class="advance-divider advances">✓ Advances to Knockout</div>` : ''}
+          ${pos === 2 ? `<div class="advance-divider eliminated">✕ Eliminated</div>` : ''}
+        `;
+      }).join("");
 
-      [1, 2, 3].forEach(md => {
-        const mdMatches = byMatchday[md];
-        if (!mdMatches.length) return;
-        html += `<div class="matchday-label">Matchday ${md}</div>`;
-        mdMatches.forEach(m => {
-          html += renderMatchRow(m);
-        });
-      });
+      // Dropdown fallback for mobile
+      const dropdownRows = [1,2,3,4].map(pos => {
+        const current = ordered[pos - 1];
+        const opts = teams.map(t => {
+          const sel = current === t ? 'selected' : '';
+          return `<option value="${t}" ${sel}>${getTeamFlag(t)} ${shortName(t)}</option>`;
+        }).join("");
+        const numClass = `pos-${pos}`;
+        const hasVal = !!current;
+        return `
+          <div class="standings-dropdown-row">
+            <div class="pos-label ${numClass}">${pos}</div>
+            <select class="pos-select ${hasVal ? 'has-value' : ''}"
+                    onchange="onDropdownChange('${currentGroup}', ${pos-1}, this.value)"
+                    ${isLocked ? 'disabled' : ''}>
+              <option value="">— Pick team —</option>
+              ${opts}
+            </select>
+          </div>
+        `;
+      }).join("");
 
-      html += `</div>`;
-
-      // Group nav
-      const idx   = GROUPS.indexOf(currentGroup);
-      const prev  = idx > 0 ? GROUPS[idx - 1] : null;
-      const next  = idx < GROUPS.length - 1 ? GROUPS[idx + 1] : null;
-
-      html += `
-        <div class="group-nav">
-          <button class="btn btn-ghost btn-sm" onclick="switchGroup('${prev}')" ${!prev ? 'disabled' : ''}>
-            ← Group ${prev || ""}
-          </button>
-          <span style="font-size:.75rem;color:var(--muted)">${picked}/${total} picked</span>
-          <button class="btn btn-ghost btn-sm" onclick="switchGroup('${next}')" ${!next ? 'disabled' : ''}>
-            Group ${next || ""} →
-          </button>
+      const html = `
+        <div class="group-card" id="groupCardInner">
+          <div class="group-card-header">
+            <div class="group-letter">${currentGroup}</div>
+            <div class="group-header-info">
+              <div class="group-header-title">Group ${currentGroup} — Predict Final Standings</div>
+              <div class="group-header-teams">${teamNames}</div>
+            </div>
+            ${isGroupComplete(currentGroup) ? `<div class="group-complete-pill">✓ Done</div>` : ''}
+          </div>
+          <div class="standings-legend">
+            <div class="legend-item"><span class="legend-pts">+3</span> exact position</div>
+            <span class="legend-sep">·</span>
+            <div class="legend-item"><span class="legend-pts">+1</span> advances / eliminated correctly</div>
+          </div>
+          <div class="standings-list" id="standingsList_${currentGroup}">
+            <div class="standings-hint">
+              ${isLocked
+                ? '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Picks are locked'
+                : '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg> Drag to reorder — top 2 advance'
+              }
+            </div>
+            ${rankRows}
+          </div>
+          <div class="standings-dropdowns" id="standingsDropdowns_${currentGroup}">
+            ${dropdownRows}
+          </div>
+          <div class="group-nav">
+            <button class="btn btn-ghost btn-sm" onclick="switchGroup('${prevGroup()}')" ${!prevGroup() ? 'disabled' : ''}>
+              ← Group ${prevGroup() || ""}
+            </button>
+            <span style="font-size:.75rem;color:var(--muted)">${isGroupComplete(currentGroup) ? '✓ Complete' : 'Drag to rank'}</span>
+            <button class="btn btn-ghost btn-sm" onclick="switchGroup('${nextGroup()}')" ${!nextGroup() ? 'disabled' : ''}>
+              Group ${nextGroup() || ""} →
+            </button>
+          </div>
         </div>
       `;
 
       document.getElementById("groupCard").innerHTML = html;
+    }
 
-      // Disable all inputs if locked
-      if (isLocked) {
-        document.querySelectorAll(".pick-radio").forEach(el => el.disabled = true);
-        document.querySelectorAll(".pick-label").forEach(el => el.style.cursor = "not-allowed");
+    function prevGroup() {
+      const i = GROUPS.indexOf(currentGroup);
+      return i > 0 ? GROUPS[i - 1] : null;
+    }
+    function nextGroup() {
+      const i = GROUPS.indexOf(currentGroup);
+      return i < GROUPS.length - 1 ? GROUPS[i + 1] : null;
+    }
+
+    // ── Drag & Drop ──
+    window.onDragStart = function(e) {
+      dragSrc = e.currentTarget;
+      e.currentTarget.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", e.currentTarget.dataset.team);
+    };
+
+    window.onDragOver = function(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      const target = e.currentTarget;
+      if (target !== dragSrc) {
+        document.querySelectorAll(".rank-row").forEach(r => r.classList.remove("drag-over"));
+        target.classList.add("drag-over");
       }
-    }
+    };
 
-    // ── Build a single match row ──
-    function renderMatchRow(m) {
-      const t1     = m.team1;
-      const t2     = m.team2;
-      const f1     = getTeamFlag(t1);
-      const f2     = getTeamFlag(t2);
-      const n1     = shortName(t1);
-      const n2     = shortName(t2);
-      const tbd1   = isTBD(t1);
-      const tbd2   = isTBD(t2);
-      const picked = groupPicks[m.id];
+    window.onDrop = function(e) {
+      e.preventDefault();
+      const target = e.currentTarget;
+      if (!dragSrc || target === dragSrc) return;
 
-      const r1id = `pick_${m.id}_t1`;
-      const r2id = `pick_${m.id}_t2`;
-      const rdid = `pick_${m.id}_draw`;
+      const group = currentGroup;
+      const list  = getGroupTeams(currentGroup);
+      const current = groupStandings[group] ? [...groupStandings[group]] : [...list];
 
-      const chk1  = picked === t1   ? "checked" : "";
-      const chk2  = picked === t2   ? "checked" : "";
-      const chkD  = picked === "draw" ? "checked" : "";
+      const srcTeam = dragSrc.dataset.team;
+      const tgtTeam = target.dataset.team;
 
-      return `
-        <div class="match-row">
-          <div class="match-meta">
-            <div class="match-num">Match ${m.matchNum}</div>
-            <div class="match-info">${fmtDate(m.date)}<br>${m.kickoffET} ET<br>${m.venue}</div>
-          </div>
-          <div class="match-picker">
-            <input type="radio" class="pick-radio" id="${r1id}" name="pick_${m.id}" value="${t1}" ${chk1} onchange="onPick('${m.id}','${t1}')" ${isLocked?'disabled':''}>
-            <label for="${r1id}" class="pick-label ${tbd1?'tbd-team':''}">
-              <span class="flag">${f1}</span>
-              <span class="name">${n1}</span>
-            </label>
+      const si = current.indexOf(srcTeam);
+      const ti = current.indexOf(tgtTeam);
+      if (si === -1 || ti === -1) return;
 
-            <input type="radio" class="pick-radio" id="${rdid}" name="pick_${m.id}" value="draw" ${chkD} onchange="onPick('${m.id}','draw')" ${isLocked?'disabled':''}>
-            <label for="${rdid}" class="pick-label draw">Draw</label>
+      current.splice(si, 1);
+      current.splice(ti, 0, srcTeam);
 
-            <input type="radio" class="pick-radio" id="${r2id}" name="pick_${m.id}" value="${t2}" ${chk2} onchange="onPick('${m.id}','${t2}')" ${isLocked?'disabled':''}>
-            <label for="${r2id}" class="pick-label ${tbd2?'tbd-team':''}">
-              <span class="flag">${f2}</span>
-              <span class="name">${n2}</span>
-            </label>
-          </div>
-        </div>
-      `;
-    }
+      groupStandings[group] = current;
+      markDirty();
+      updateProgress();
+      renderGroupTabs();
+      renderGroupCard();
+    };
 
-    // ── Build winner grid ──
+    window.onDragEnd = function(e) {
+      document.querySelectorAll(".rank-row").forEach(r => {
+        r.classList.remove("dragging", "drag-over");
+      });
+      dragSrc = null;
+    };
+
+    // ── Dropdown fallback ──
+    window.onDropdownChange = function(group, posIdx, team) {
+      const list    = getGroupTeams(group);
+      const current = groupStandings[group] ? [...groupStandings[group]] : [...list];
+
+      // Remove this team from wherever it was
+      const oldIdx = current.indexOf(team);
+      if (oldIdx !== -1) current.splice(oldIdx, 1);
+
+      // Insert at position
+      current.splice(posIdx, 0, team);
+
+      // Ensure no duplicates (if same team picked twice, clear duplicates)
+      const seen = new Set();
+      const deduped = [];
+      for (const t of current) {
+        if (!seen.has(t)) { seen.add(t); deduped.push(t); }
+      }
+      // Fill back with unselected teams if needed
+      list.forEach(t => { if (!seen.has(t)) deduped.push(t); });
+
+      groupStandings[group] = deduped.slice(0, 4);
+      markDirty();
+      updateProgress();
+      renderGroupTabs();
+      renderGroupCard();
+    };
+
+    // ── Winner grid ──
     function renderWinnerGrid() {
-      // Show all non-TBD teams first, then TBD
       const allTeams = Object.keys(TOURNAMENT_DATA.teams);
-      const confirmed = allTeams.filter(t => !TOURNAMENT_DATA.teams[t].tbd);
-      const tbd       = allTeams.filter(t => TOURNAMENT_DATA.teams[t].tbd);
-      const sorted    = [...confirmed.sort(), ...tbd.sort()];
+      const confirmed = allTeams.filter(t => !TOURNAMENT_DATA.teams[t].tbd).sort();
+      const tbd       = allTeams.filter(t =>  TOURNAMENT_DATA.teams[t].tbd).sort();
+      const sorted    = [...confirmed, ...tbd];
 
       const html = sorted.map(t => {
-        const info  = TOURNAMENT_DATA.teams[t];
-        const chk   = winnerPick === t ? "checked" : "";
-        const cls   = info.tbd ? "tbd-team" : "";
-        const wid   = `winner_${t.replace(/\s+/g,"_").replace(/[^a-zA-Z0-9_]/g, "")}`;
+        const info = TOURNAMENT_DATA.teams[t];
+        const chk  = winnerPick === t ? "checked" : "";
+        const cls  = info.tbd ? "tbd-team" : "";
+        const wid  = `winner_${t.replace(/\W/g,"_")}`;
         return `
-          <input type="radio" class="winner-radio" id="${wid}" name="winnerPick" value="${t}" ${chk} onchange="onWinnerPick('${t}')" ${isLocked?'disabled':''}>
+          <input type="radio" class="winner-radio" id="${wid}" name="winnerPick" value="${t}" ${chk}
+                 onchange="onWinnerPick('${t}')" ${isLocked ? 'disabled' : ''}>
           <label for="${wid}" class="winner-label ${cls}">
             <span class="flag">${info.flag}</span>
             <span class="name">${t}</span>
@@ -648,57 +674,48 @@
       }).join("");
 
       document.getElementById("winnerGrid").innerHTML = html;
-
-      if (isLocked) {
-        document.querySelectorAll(".winner-radio").forEach(el => el.disabled = true);
-        document.querySelectorAll(".winner-label").forEach(el => el.style.cursor = "not-allowed");
-      }
-
       updateWinnerDisplay();
     }
 
-    // ── Update winner display pill ──
     function updateWinnerDisplay() {
       const disp = document.getElementById("winnerDisplay");
+      const ws   = document.getElementById("winnerStatus");
       if (winnerPick) {
         const info = TOURNAMENT_DATA.teams[winnerPick];
         document.getElementById("winnerDisplayFlag").textContent = info?.flag || "🏳️";
         document.getElementById("winnerDisplayName").textContent = winnerPick;
         disp.classList.remove("hidden");
-      } else {
-        disp.classList.add("hidden");
-      }
-      // Also update header status
-      const ws = document.getElementById("winnerStatus");
-      if (winnerPick) {
-        const info = TOURNAMENT_DATA.teams[winnerPick];
         ws.innerHTML = `<span style="color:var(--gold-dark);font-weight:600">${info?.flag || ""} ${winnerPick}</span>`;
       } else {
-        ws.textContent = "No winner selected";
+        disp.classList.add("hidden");
+        ws.textContent = "No champion selected";
       }
     }
 
-    // ── Update progress bar ──
-    function updateProgress() {
-      const total  = TOURNAMENT_DATA.groupMatches.length; // 72
-      const picked = Object.keys(groupPicks).length;
-      const pct    = Math.round((picked / total) * 100);
+    window.onWinnerPick = function(team) {
+      winnerPick = team;
+      updateWinnerDisplay();
+      markDirty();
+    };
 
-      document.getElementById("pickCount").textContent   = picked;
+    // ── Progress ──
+    function updateProgress() {
+      const done = countComplete();
+      const pct  = Math.round((done / 12) * 100);
+      document.getElementById("pickCount").textContent    = done;
       document.getElementById("progressFill").style.width = pct + "%";
     }
 
-    // ── Mark dirty / show save bar ──
     function markDirty() {
       hasUnsaved = true;
       if (!isLocked) {
-        document.getElementById("saveBar").style.display = "flex";
+        document.getElementById("saveBar").style.display  = "flex";
         document.getElementById("saveStatus").textContent = "Unsaved changes";
         document.getElementById("saveStatus").className   = "save-status";
       }
     }
 
-    // ── Handlers (exposed to window) ──
+    // ── Switch group ──
     window.switchGroup = function(g) {
       if (!g) return;
       currentGroup = g;
@@ -707,37 +724,21 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
-    window.onPick = function(matchId, value) {
-      groupPicks[matchId] = value;
-      updateProgress();
-      renderGroupTabs(); // update complete dots
-      markDirty();
-    };
-
-    window.onWinnerPick = function(team) {
-      winnerPick = team;
-      updateWinnerDisplay();
-      markDirty();
-    };
-
     // ── Save ──
     window.savePicks = async function() {
       if (!currentUser || isLocked) return;
-      const btn = document.getElementById("saveBtn");
+      const btn    = document.getElementById("saveBtn");
       const status = document.getElementById("saveStatus");
       btn.disabled = true;
       status.textContent = "Saving…";
       status.className   = "save-status saving";
       try {
-        await savePhase1Picks(currentUser, groupPicks, winnerPick);
+        await savePhase1Picks(currentUser, groupStandings, winnerPick);
         hasUnsaved = false;
         status.textContent = "✓ Picks saved!";
         status.className   = "save-status saved";
-        // Auto-hide after 3s
         setTimeout(() => {
-          if (!hasUnsaved) {
-            document.getElementById("saveBar").style.display = "none";
-          }
+          if (!hasUnsaved) document.getElementById("saveBar").style.display = "none";
         }, 3000);
       } catch (err) {
         console.error(err);
@@ -748,33 +749,21 @@
       }
     };
 
-    // ── Warn on page leave ──
     window.addEventListener("beforeunload", e => {
-      if (hasUnsaved && !isLocked) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
+      if (hasUnsaved && !isLocked) { e.preventDefault(); e.returnValue = ""; }
     });
 
     // ── Init ──
     async function init() {
-      // Check session
       const user = getSessionUser();
-      if (!user) {
-        window.location.href = "index.html";
-        return;
-      }
+      if (!user) { window.location.href = "index.html"; return; }
       currentUser = user;
       document.getElementById("userChip").textContent = user;
-
-      // Sign-out
       document.getElementById("signoutBtn").addEventListener("click", () => {
-        clearSessionUser();
-        window.location.href = "index.html";
+        clearSessionUser(); window.location.href = "index.html";
       });
 
       try {
-        // Load config + picks in parallel
         const [config, picks] = await Promise.all([
           getTournamentConfig(),
           getUserPicks(user),
@@ -782,43 +771,46 @@
 
         isLocked = !!config.phase1Locked;
 
-        // Populate existing picks
-        if (picks?.groupPicks) {
-          groupPicks = picks.groupPicks;
+        if (picks?.groupPicks && typeof picks.groupPicks === 'object') {
+          // Support both old format (match_N: team) and new format (A: [...])
+          const first = Object.keys(picks.groupPicks)[0];
+          if (first && !first.startsWith('match_')) {
+            groupStandings = picks.groupPicks;
+          }
+          // Old match-based picks are just ignored (incompatible format)
         }
-        if (picks?.winnerPick) {
-          winnerPick = picks.winnerPick;
-        }
+        if (picks?.winnerPick) winnerPick = picks.winnerPick;
 
-        // Show/hide locked banner + phase banner
+        // Initialize any missing groups with default order
+        GROUPS.forEach(g => {
+          if (!isGroupComplete(g)) {
+            groupStandings[g] = [...getGroupTeams(g)];
+          }
+        });
+
         if (isLocked) {
           document.getElementById("lockedBanner").style.display = "flex";
-          document.getElementById("saveBar").style.display       = "none";
+          document.getElementById("saveBar").style.display      = "none";
         } else {
           const banner = document.getElementById("phaseBanner");
           banner.style.display = "flex";
           banner.className     = "phase-banner open";
-          const picked = Object.keys(groupPicks).length;
+          const done = countComplete();
           document.getElementById("phaseBannerText").textContent =
-            picked > 0
-              ? `Picks open — ${picked}/72 matches picked. Don't forget to save!`
-              : "Picks are open! Select your match winners and tournament champion, then save.";
+            `Picks open — rank all 12 groups and choose your champion, then save!`;
 
-          // Show save bar only if picks already exist (coming back to edit)
-          if (picked > 0 || winnerPick) {
-            document.getElementById("saveBar").style.display = "flex";
-            document.getElementById("saveStatus").textContent = "Picks loaded — save to update";
-            document.getElementById("saveStatus").className   = "save-status";
+          if (done > 0 || winnerPick) {
+            document.getElementById("saveBar").style.display   = "flex";
+            document.getElementById("saveStatus").textContent  = "Picks loaded — save to update";
+            document.getElementById("saveStatus").className    = "save-status";
           }
         }
 
-        // Render UI
         updateProgress();
         renderGroupTabs();
         renderGroupCard();
         renderWinnerGrid();
 
-        // Show main
         document.getElementById("loadingState").style.display = "none";
         document.getElementById("mainContent").style.display  = "block";
 
@@ -827,14 +819,12 @@
         document.getElementById("loadingState").innerHTML = `
           <div style="text-align:center;color:var(--error)">
             <div style="font-size:1.5rem;margin-bottom:.5rem">⚠️</div>
-            Failed to load picks. <a href="picks.html" style="color:var(--green);text-decoration:underline">Refresh</a>
-          </div>
-        `;
+            Failed to load. <a href="picks.html" style="color:var(--green);text-decoration:underline">Refresh</a>
+          </div>`;
       }
     }
 
     init();
   </script>
-
 </body>
 </html>
