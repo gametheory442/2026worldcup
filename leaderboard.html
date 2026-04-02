@@ -64,7 +64,6 @@
     .rank-3 { background: #CD7F32; color: #fff; }
     .rank-other { background: var(--bg); color: var(--muted); border: 1.5px solid var(--border); font-size: .75rem; }
 
-    /* Flag avatar — replaces initials */
     .player-cell { display: flex; align-items: center; gap: .65rem; }
     .player-avatar {
       width: 34px; height: 34px; border-radius: 50%;
@@ -81,8 +80,22 @@
     .breakdown-val { font-family: var(--font-head); font-size: .85rem; font-weight: 600; color: var(--text); }
     .breakdown-val.zero { color: #CBD5E1; }
 
-    .winner-pill { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .6rem; background: var(--gold-light); border: 1px solid var(--gold); border-radius: 999px; font-size: .72rem; font-weight: 600; color: var(--gold-dark); white-space: nowrap; }
-    .winner-pill.no-pick { background: var(--bg); border-color: var(--border); color: var(--muted); font-weight: 400; }
+    /* Champion pick cell — locked vs revealed states */
+    .winner-pill {
+      display: inline-flex; align-items: center; gap: .3rem;
+      padding: .2rem .6rem; background: var(--gold-light);
+      border: 1px solid var(--gold); border-radius: 999px;
+      font-size: .72rem; font-weight: 600; color: var(--gold-dark); white-space: nowrap;
+    }
+    .winner-pill.no-pick {
+      background: var(--bg); border-color: var(--border);
+      color: var(--muted); font-weight: 400;
+    }
+    .winner-pill.hidden-pick {
+      background: var(--bg); border-color: var(--border);
+      color: var(--muted); font-weight: 400; font-style: italic;
+      letter-spacing: 0;
+    }
 
     .scoring-guide { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem .75rem; font-size: .83rem; }
     .sg-item { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .4rem .6rem; background: var(--bg); border-radius: var(--radius); border: 1px solid var(--border); }
@@ -99,6 +112,14 @@
     .spinner { width: 22px; height: 22px; border: 2.5px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin .65s linear infinite; flex-shrink: 0; }
     .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
     .empty-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+
+    /* Pre-launch banner */
+    .pick-hidden-notice {
+      display: flex; align-items: center; gap: .65rem;
+      padding: .75rem 1rem; background: #FFFBEB;
+      border: 1px solid #FDE68A; border-radius: var(--radius);
+      font-size: .82rem; color: #92400E; margin-bottom: 1rem;
+    }
 
     @keyframes fadeSlideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
     .lb-table tbody tr { animation: fadeSlideIn .3s ease both; }
@@ -155,6 +176,11 @@
       <div class="page-subtitle">Live standings · updates every 60 seconds</div>
     </div>
 
+    <!-- Pre-launch notice (shown only when phase1 not yet locked) -->
+    <div id="pickHiddenNotice" class="pick-hidden-notice" style="display:none">
+      🔒 <span>Champion picks are hidden until the tournament kicks off on <strong>June 11</strong> — picks lock then and everyone's selections will be revealed.</span>
+    </div>
+
     <!-- Podium -->
     <div class="card podium-section" id="podiumSection" style="display:none; padding-bottom:0; overflow:hidden;">
       <div class="card-title" style="padding:1rem 1.5rem 0; margin-bottom:0;">🥇 Top 3</div>
@@ -194,7 +220,7 @@
               <th class="right hide-mobile" style="min-width:60px;">Groups</th>
               <th class="right hide-mobile" style="min-width:60px;">Knockout</th>
               <th class="right hide-mobile" style="min-width:60px;">🏆 Bonus</th>
-              <th class="hide-mobile" style="min-width:120px;">Champion Pick</th>
+              <th id="championPickHeader" class="hide-mobile" style="min-width:120px;">Champion Pick</th>
             </tr>
           </thead>
           <tbody id="lbBody"></tbody>
@@ -254,6 +280,7 @@
       getAllGroupStandings,
       getThirdPlaceQualifiers,
       getAllUsers,
+      getTournamentConfig,
       calculateScores,
     } from "./firebase.js";
 
@@ -263,17 +290,16 @@
     let countdown      = 60;
     let countdownTimer = null;
     let isRefreshing   = false;
+    let phase1Locked   = false;  // gates champion pick visibility
 
-    // Returns the flag emoji for the winner pick team (for the champion column)
     function winnerFlag(teamKey) {
       if (!teamKey) return "";
       return TOURNAMENT_DATA.teams[teamKey]?.flag || "🏳️";
     }
 
-    // Returns a flag emoji for a player's champion pick to use in their avatar.
-    // Falls back to the winner pick's flag if available, otherwise a generic person.
     function playerAvatarEmoji(winnerPick) {
-      if (winnerPick) return TOURNAMENT_DATA.teams[winnerPick]?.flag || "🏳️";
+      // Only show team flag avatar after picks are locked
+      if (phase1Locked && winnerPick) return TOURNAMENT_DATA.teams[winnerPick]?.flag || "🏳️";
       return "👤";
     }
 
@@ -284,7 +310,6 @@
     function renderPodium(scores) {
       if (scores.length < 2) { document.getElementById("podiumSection").style.display = "none"; return; }
       const top3  = scores.slice(0, Math.min(3, scores.length));
-      // Display order: 2nd left, 1st centre, 3rd right
       const order = top3.length === 1 ? [top3[0]]
         : top3.length === 2 ? [top3[1], top3[0]]
         : [top3[1], top3[0], top3[2]];
@@ -320,7 +345,6 @@
       document.getElementById("tableWrap").style.display  = "block";
       document.getElementById("emptyState").style.display = "none";
 
-      // Build a map: username → winnerPick (for avatar flag)
       const picksMap = {};
       picks.forEach(p => { picksMap[p.username] = p.winnerPick || null; });
 
@@ -329,7 +353,6 @@
         const isMe      = entry.username === (currentUser || "").toLowerCase();
         const display   = entry.displayName || entry.username;
         const wp        = picksMap[entry.username];
-        const wpFlag    = wp ? winnerFlag(wp) : "";
         const bd        = entry.breakdown || {};
         const hasScored = entry.score > 0;
         const avatarEmoji = playerAvatarEmoji(wp);
@@ -339,12 +362,22 @@
           : rank === 3 ? `<span class="rank-badge rank-3">3</span>`
           : `<span class="rank-badge rank-other">${rank}</span>`;
 
+        // Champion pick column: show team if phase1Locked, else lock icon placeholder
+        let championCell;
+        if (phase1Locked) {
+          championCell = wp
+            ? `<span class="winner-pill">${winnerFlag(wp)} ${wp}</span>`
+            : `<span class="winner-pill no-pick">No pick</span>`;
+        } else {
+          championCell = `<span class="winner-pill hidden-pick">🔒 Hidden until Jun 11</span>`;
+        }
+
         return `
           <tr class="${isMe ? "is-me" : ""}">
             <td class="center"><div class="rank-cell">${rankBadge}</div></td>
             <td>
               <div class="player-cell">
-                <div class="player-avatar ${rank === 1 ? 'gold-av' : ''}" title="${wp ? 'Picked: ' + wp : 'No champion pick'}">${avatarEmoji}</div>
+                <div class="player-avatar ${rank === 1 ? 'gold-av' : ''}" title="${phase1Locked && wp ? 'Picked: ' + wp : 'Champion pick hidden until go-live'}">${avatarEmoji}</div>
                 <span class="player-name ${isMe ? "is-me-label" : ""}">${display}</span>
               </div>
             </td>
@@ -352,27 +385,37 @@
             <td class="right hide-mobile"><span class="breakdown-val ${!bd.groupStage ? "zero" : ""}">${bd.groupStage || 0}</span></td>
             <td class="right hide-mobile"><span class="breakdown-val ${!bd.knockout ? "zero" : ""}">${bd.knockout || 0}</span></td>
             <td class="right hide-mobile"><span class="breakdown-val ${!bd.winner ? "zero" : ""}">${bd.winner || 0}</span></td>
-            <td class="hide-mobile">
-              ${wp ? `<span class="winner-pill">${wpFlag} ${wp}</span>` : `<span class="winner-pill no-pick">No pick</span>`}
-            </td>
+            <td class="hide-mobile">${championCell}</td>
           </tr>`;
       }).join("");
     }
 
     async function loadLeaderboard() {
       try {
-        const [allPicksDocs, allKoResults, allGroupResults, actualThirdQualifiers, allUsers] = await Promise.all([
+        const [allPicksDocs, allKoResults, allGroupResults, actualThirdQualifiers, allUsers, config] = await Promise.all([
           getAllPicks(),
           getAllResults(),
           getAllGroupStandings(),
-          getThirdPlaceQualifiers(),   // null until admin enters them
+          getThirdPlaceQualifiers(),
           getAllUsers(),
+          getTournamentConfig(),
         ]);
+
+        phase1Locked = !!config.phase1Locked;
+
+        // Show or hide the pre-launch notice
+        const notice = document.getElementById("pickHiddenNotice");
+        if (notice) notice.style.display = phase1Locked ? "none" : "flex";
+
+        // Update column header if not locked
+        const colHeader = document.getElementById("championPickHeader");
+        if (colHeader && !phase1Locked) {
+          colHeader.innerHTML = `Champion Pick <span style="font-size:.55rem;opacity:.7;font-family:var(--font-body);font-weight:400;text-transform:none;letter-spacing:0;">🔒 hidden</span>`;
+        }
 
         const displayMap = {};
         allUsers.forEach(u => { displayMap[u.username] = u.displayName || u.username; });
 
-        // Build a winnerPick map for avatar display
         const wpMap = {};
         allPicksDocs.forEach(p => { wpMap[p.username] = p.winnerPick || null; });
 
@@ -380,7 +423,7 @@
           allPicksDocs,
           allKoResults,
           allGroupResults,
-          actualThirdQualifiers,   // null → +1 tier points not awarded yet (fine before group stage ends)
+          actualThirdQualifiers,
           TOURNAMENT_DATA.scoring
         );
 

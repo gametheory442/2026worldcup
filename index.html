@@ -9,14 +9,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* ── Index-only styles ── */
-
     body {
       background: var(--bg);
       overflow-x: hidden;
     }
 
-    /* Pitch texture background */
     .pitch-bg {
       position: fixed;
       inset: 0;
@@ -33,7 +30,6 @@
       pointer-events: none;
     }
 
-    /* ── Hero section ── */
     .login-wrap {
       position: relative;
       z-index: 1;
@@ -52,7 +48,6 @@
       text-align: center;
     }
 
-    /* Trophy / badge mark */
     .trophy-mark {
       display: inline-flex;
       align-items: center;
@@ -71,7 +66,6 @@
       50%       { transform: translateY(-8px); }
     }
 
-    /* Eyebrow */
     .eyebrow {
       font-family: var(--font-head);
       font-size: .72rem;
@@ -87,7 +81,6 @@
       display: inline-block;
     }
 
-    /* Big headline */
     .login-title {
       font-family: var(--font-head);
       font-size: clamp(2.4rem, 8vw, 4.25rem);
@@ -110,7 +103,6 @@
       max-width: 380px;
     }
 
-    /* ── Stats strip ── */
     .stats-strip {
       display: flex;
       justify-content: center;
@@ -146,11 +138,10 @@
       margin-top: .2rem;
     }
 
-    /* ── Login card ── */
     .login-card-wrap {
       display: flex;
       justify-content: center;
-      padding: 2rem 1rem 3.5rem;
+      padding: 2rem 1rem 1.5rem;
       position: relative;
       z-index: 1;
     }
@@ -176,7 +167,6 @@
       gap: .5rem;
     }
 
-    /* Username field */
     .login-input-row {
       display: flex;
       gap: .5rem;
@@ -186,7 +176,6 @@
       border-radius: var(--radius);
     }
 
-    /* Returning users list */
     .users-hint {
       margin-top: 1.25rem;
     }
@@ -225,13 +214,201 @@
       color: var(--muted);
     }
 
-    /* Error */
     #login-error {
       display: none;
       margin-top: .75rem;
     }
 
-    /* ── Footer band ── */
+    /* ── Leaderboard Preview ── */
+    .lb-preview-wrap {
+      position: relative;
+      z-index: 1;
+      padding: 0 1rem 2rem;
+      display: flex;
+      justify-content: center;
+    }
+
+    .lb-preview-inner {
+      width: 100%;
+      max-width: 560px;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .lb-preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .85rem 1.25rem;
+      background: var(--green);
+      color: #fff;
+    }
+
+    .lb-preview-title {
+      font-family: var(--font-head);
+      font-size: .85rem;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .lb-preview-icon { font-size: 1rem; }
+
+    .lb-preview-live {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      font-size: .68rem;
+      font-weight: 700;
+      font-family: var(--font-head);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.75);
+    }
+
+    .lb-live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #4ADE80;
+      box-shadow: 0 0 6px #4ADE80;
+      animation: livePulse 2s ease-in-out infinite;
+    }
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .5; transform: scale(.7); }
+    }
+
+    .lb-preview-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .65rem;
+      padding: 2rem;
+      color: var(--muted);
+      font-size: .85rem;
+    }
+
+    .lb-preview-empty {
+      padding: 2rem;
+      text-align: center;
+      font-size: .85rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .lb-preview-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .lb-preview-table thead th {
+      font-family: var(--font-head);
+      font-size: .62rem;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: .5rem .85rem;
+      border-bottom: 1.5px solid var(--border);
+      text-align: left;
+      background: var(--bg);
+    }
+    .lb-preview-table thead th.right { text-align: right; }
+    .lb-preview-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background .1s;
+      animation: fadeIn .3s ease both;
+    }
+    .lb-preview-table tbody tr:last-child { border-bottom: none; }
+    .lb-preview-table tbody tr:hover td { background: #F7F5F0; }
+    .lb-preview-table td {
+      padding: .7rem .85rem;
+      font-size: .83rem;
+      vertical-align: middle;
+    }
+    .lb-preview-table td.right { text-align: right; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .lb-preview-table tbody tr:nth-child(1) { animation-delay: .04s; }
+    .lb-preview-table tbody tr:nth-child(2) { animation-delay: .08s; }
+    .lb-preview-table tbody tr:nth-child(3) { animation-delay: .12s; }
+    .lb-preview-table tbody tr:nth-child(4) { animation-delay: .16s; }
+    .lb-preview-table tbody tr:nth-child(5) { animation-delay: .20s; }
+
+    .lb-rank {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      font-family: var(--font-head);
+      font-size: .75rem;
+      font-weight: 700;
+    }
+    .lb-rank-1 { background: var(--gold); color: #fff; }
+    .lb-rank-2 { background: #9CA3AF; color: #fff; }
+    .lb-rank-3 { background: #CD7F32; color: #fff; }
+    .lb-rank-other { background: var(--bg); color: var(--muted); border: 1px solid var(--border); font-size: .7rem; }
+
+    .lb-player {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+    }
+    .lb-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--green-light); border: 1.5px solid var(--green-mid);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0;
+    }
+    .lb-avatar.gold-av { background: var(--gold-light); border-color: var(--gold); }
+    .lb-name { font-weight: 600; color: var(--dark); font-size: .83rem; }
+    .lb-score { font-family: var(--font-head); font-size: 1rem; font-weight: 700; color: var(--green); }
+    .lb-score-zero { color: var(--muted); }
+    .lb-breakdown { font-family: var(--font-head); font-size: .8rem; font-weight: 600; color: var(--text); }
+    .lb-breakdown.zero { color: #CBD5E1; }
+
+    .lb-preview-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .65rem 1.25rem;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+      gap: .75rem;
+    }
+
+    .lb-preview-link {
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--green);
+      text-decoration: none;
+      transition: opacity .15s;
+    }
+    .lb-preview-link:hover { opacity: .7; }
+
+    .lb-preview-updated {
+      font-size: .68rem;
+      color: var(--muted);
+    }
+
+    @media (max-width: 480px) {
+      .hide-xs { display: none; }
+      .stats-strip { border-radius: var(--radius); }
+      .login-card  { padding: 1.5rem 1.25rem; }
+      .login-input-row { flex-direction: column; }
+      .login-input-row .btn { width: 100%; }
+    }
+
     .site-footer {
       position: relative;
       z-index: 1;
@@ -243,22 +420,12 @@
       letter-spacing: .03em;
     }
     .site-footer strong { color: rgba(255,255,255,.85); }
-
-    /* ── Responsive ── */
-    @media (max-width: 480px) {
-      .stats-strip { border-radius: var(--radius); }
-      .login-card  { padding: 1.5rem 1.25rem; }
-      .login-input-row { flex-direction: column; }
-      .login-input-row .btn { width: 100%; }
-    }
   </style>
 </head>
 <body>
 
-<!-- Pitch texture -->
 <div class="pitch-bg" aria-hidden="true"></div>
 
-<!-- Minimal header (no nav since not logged in) -->
 <header class="site-header">
   <div class="site-logo">
     <span>⚽</span> WC2026 Family Bracket
@@ -266,10 +433,8 @@
   <div style="font-size:.78rem;color:rgba(255,255,255,.65);">June 11 – July 19, 2026</div>
 </header>
 
-<!-- Main login wrap -->
 <div class="login-wrap">
 
-  <!-- Hero -->
   <section class="login-hero">
     <div class="trophy-mark">🏆</div>
     <div class="eyebrow">FIFA World Cup 2026 · Family Edition</div>
@@ -281,7 +446,6 @@
       48 teams. 104 matches. One champion.<br>Predict the results, climb the leaderboard.
     </p>
 
-    <!-- Quick stats -->
     <div class="stats-strip">
       <div class="stat-item">
         <div class="stat-num">48</div>
@@ -302,7 +466,6 @@
     </div>
   </section>
 
-  <!-- Login card -->
   <div class="login-card-wrap">
     <div class="login-card">
       <div class="login-card-title">
@@ -333,7 +496,6 @@
         ⚠️ Please enter your name to continue.
       </div>
 
-      <!-- Returning users -->
       <div class="users-hint" id="users-hint">
         <div class="users-hint-label">Or pick your name</div>
         <div class="users-chips" id="users-chips">
@@ -343,14 +505,59 @@
     </div>
   </div>
 
+  <!-- Live Leaderboard Preview -->
+  <div class="lb-preview-wrap" id="lbPreview" style="display:none">
+    <div class="lb-preview-inner">
+      <div class="lb-preview-header">
+        <div class="lb-preview-title">
+          <span class="lb-preview-icon">📊</span>
+          Current Standings
+        </div>
+        <div class="lb-preview-live">
+          <span class="lb-live-dot"></span>
+          Live
+        </div>
+      </div>
+
+      <div id="lbPreviewLoading" class="lb-preview-loading">
+        <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>
+        <span>Loading standings…</span>
+      </div>
+
+      <div id="lbPreviewEmpty" class="lb-preview-empty" style="display:none">
+        No picks submitted yet — be the first!
+      </div>
+
+      <div id="lbPreviewTable" style="display:none">
+        <table class="lb-preview-table">
+          <thead>
+            <tr>
+              <th style="width:36px">#</th>
+              <th>Player</th>
+              <th class="right">Score</th>
+              <th class="right hide-xs">Groups</th>
+              <th class="right hide-xs">Knockout</th>
+              <th class="right hide-xs">🏆</th>
+            </tr>
+          </thead>
+          <tbody id="lbPreviewBody"></tbody>
+        </table>
+      </div>
+
+      <div class="lb-preview-footer">
+        <a href="leaderboard.html" class="lb-preview-link">View full standings →</a>
+        <span id="lbPreviewUpdated" class="lb-preview-updated"></span>
+      </div>
+    </div>
+  </div>
+
 </div>
 
-<!-- Footer -->
 <footer class="site-footer">
   <strong>WC2026 Family Bracket</strong> · USA · Canada · Mexico · Final at MetLife Stadium, July 19
 </footer>
 
-<!-- ── JS ── -->
+<script src="data.js"></script>
 <script type="module">
   import {
     getSessionUser,
@@ -358,9 +565,17 @@
     userExists,
     createUser,
     getAllUsers,
+    getAllPicks,
+    getAllResults,
+    getAllGroupStandings,
+    getThirdPlaceQualifiers,
+    getTournamentConfig,
+    calculateScores,
   } from "./firebase.js";
 
-  // ── If already logged in, redirect straight to picks ──
+  /* global TOURNAMENT_DATA */
+
+  // ── If already logged in, redirect ──
   const existing = getSessionUser();
   if (existing) {
     window.location.replace("picks.html");
@@ -397,15 +612,112 @@
     }
   }
 
+  // ── Load leaderboard preview ──
+  async function loadLeaderboardPreview() {
+    const previewWrap = document.getElementById("lbPreview");
+    try {
+      const [allPicksDocs, allKoResults, allGroupResults, actualThirdQualifiers, allUsers, config] = await Promise.all([
+        getAllPicks(),
+        getAllResults(),
+        getAllGroupStandings(),
+        getThirdPlaceQualifiers(),
+        getAllUsers(),
+        getTournamentConfig(),
+      ]);
+
+      // Show the section regardless (even if empty)
+      previewWrap.style.display = "flex";
+
+      const phase1Locked = !!config.phase1Locked;
+
+      const displayMap = {};
+      allUsers.forEach(u => { displayMap[u.username] = u.displayName || u.username; });
+
+      const scores = calculateScores(
+        allPicksDocs,
+        allKoResults,
+        allGroupResults,
+        actualThirdQualifiers,
+        TOURNAMENT_DATA.scoring
+      );
+
+      // Build winner pick map
+      const wpMap = {};
+      allPicksDocs.forEach(p => { wpMap[p.username] = p.winnerPick || null; });
+
+      scores.forEach(s => {
+        s.displayName = displayMap[s.username] || s.username;
+        s.winnerPick  = wpMap[s.username] || null;
+      });
+
+      document.getElementById("lbPreviewLoading").style.display = "none";
+
+      if (!scores.length) {
+        document.getElementById("lbPreviewEmpty").style.display = "block";
+        return;
+      }
+
+      document.getElementById("lbPreviewTable").style.display = "block";
+
+      // Show top 8 (or fewer)
+      const top = scores.slice(0, 8);
+      const tbody = document.getElementById("lbPreviewBody");
+
+      tbody.innerHTML = top.map((entry, idx) => {
+        const rank = idx + 1;
+        const display = entry.displayName || entry.username;
+        const bd = entry.breakdown || {};
+        const wp = entry.winnerPick;
+        const wpFlag = (phase1Locked && wp) ? (TOURNAMENT_DATA.teams[wp]?.flag || "🏳️") : null;
+        const avatarEmoji = (phase1Locked && wp) ? wpFlag : "👤";
+        const avatarCls = rank === 1 ? "lb-avatar gold-av" : "lb-avatar";
+
+        const rankBadge = rank === 1 ? `<span class="lb-rank lb-rank-1">1</span>`
+          : rank === 2 ? `<span class="lb-rank lb-rank-2">2</span>`
+          : rank === 3 ? `<span class="lb-rank lb-rank-3">3</span>`
+          : `<span class="lb-rank lb-rank-other">${rank}</span>`;
+
+        // Champion bonus cell: hidden before phase1Locked
+        const bonusCell = bd.winner > 0
+          ? `<span class="lb-breakdown">${bd.winner}</span>`
+          : `<span class="lb-breakdown zero">—</span>`;
+
+        return `
+          <tr>
+            <td style="padding-left:.75rem">${rankBadge}</td>
+            <td>
+              <div class="lb-player">
+                <div class="${avatarCls}">${avatarEmoji}</div>
+                <span class="lb-name">${display}</span>
+              </div>
+            </td>
+            <td class="right"><span class="lb-score ${entry.score === 0 ? 'lb-score-zero' : ''}">${entry.score}</span></td>
+            <td class="right hide-xs"><span class="lb-breakdown ${!bd.groupStage ? 'zero' : ''}">${bd.groupStage || 0}</span></td>
+            <td class="right hide-xs"><span class="lb-breakdown ${!bd.knockout ? 'zero' : ''}">${bd.knockout || 0}</span></td>
+            <td class="right hide-xs">${bonusCell}</td>
+          </tr>`;
+      }).join("");
+
+      const now = new Date();
+      document.getElementById("lbPreviewUpdated").textContent =
+        `Updated ${now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+
+    } catch (err) {
+      console.error("Failed to load leaderboard preview:", err);
+      // Don't show the section if it errors — fail silently
+    }
+  }
+
   loadUsers();
+  loadLeaderboardPreview();
 
   // ── Login logic ──
-  const loginBtn   = document.getElementById("login-btn");
-  const inputEl    = document.getElementById("username-input");
-  const errorEl    = document.getElementById("login-error");
+  const loginBtn  = document.getElementById("login-btn");
+  const inputEl   = document.getElementById("username-input");
+  const errorEl   = document.getElementById("login-error");
 
   async function doLogin() {
-    const raw  = inputEl.value.trim();
+    const raw = inputEl.value.trim();
     if (!raw) {
       errorEl.style.display = "flex";
       inputEl.focus();
@@ -413,19 +725,15 @@
     }
     errorEl.style.display = "none";
 
-    // Disable UI while working
-    loginBtn.disabled  = true;
+    loginBtn.disabled    = true;
     loginBtn.textContent = "…";
-    inputEl.disabled   = true;
+    inputEl.disabled     = true;
 
     try {
-      // Create user in Firestore if they don't exist yet
       const exists = await userExists(raw);
       if (!exists) {
         await createUser(raw);
       }
-
-      // Store in session & redirect
       setSessionUser(raw);
       window.location.href = "picks.html";
     } catch (err) {
@@ -443,9 +751,7 @@
     if (e.key === "Enter") doLogin();
   });
   inputEl.addEventListener("input", () => {
-    if (inputEl.value.trim()) {
-      errorEl.style.display = "none";
-    }
+    if (inputEl.value.trim()) errorEl.style.display = "none";
   });
 </script>
 
