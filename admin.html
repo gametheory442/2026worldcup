@@ -357,10 +357,36 @@
       <!-- Group Standings Tab -->
       <div class="tab-content" id="tab-group">
         <div class="alert alert-info" style="margin-bottom:1rem;">
-          ℹ️ After the group stage, enter the final finishing order (1st–4th) for each group. This triggers scoring for all players' predictions.
+          ℹ️ After the group stage, enter the final finishing order (1st–4th) for each group. This triggers scoring for all players' group predictions.
         </div>
         <div class="groups-grid" id="groupStandingsContainer">
           <div class="loading-state" style="grid-column:1/-1;"><div class="spinner"></div> Loading groups…</div>
+        </div>
+
+        <!-- Third-place qualifiers section — shown once all 12 group standings are entered -->
+        <div id="thirdQualifiersSection" style="margin-top:1.5rem; display:none;">
+          <div class="results-card">
+            <div class="results-card-header">
+              <div class="results-card-title">⭐ Third-Place Qualifiers</div>
+              <div class="results-card-count" id="thirdQualCount">0 / 8 entered</div>
+            </div>
+            <div style="padding:.85rem 1.25rem; border-bottom:1px solid var(--border); font-size:.82rem; color:var(--muted); line-height:1.55;">
+              Select the <strong style="color:var(--dark)">8 third-place teams</strong> that actually qualified for the Round of 32.
+              This unlocks the +1 consolation tier-scoring for all players' group stage picks.
+            </div>
+            <div style="padding:.85rem 1.25rem;">
+              <div id="thirdQualGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:.4rem;">
+                <div class="loading-state" style="grid-column:1/-1; padding:1.5rem;"><div class="spinner"></div> Loading…</div>
+              </div>
+              <div style="margin-top:1rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem;">
+                <span id="thirdQualStatus" style="font-size:.78rem; color:var(--muted);">Select 8 teams, then save.</span>
+                <button class="save-group-btn" id="saveThirdBtn" onclick="saveThirdQualifiers()">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  Save Third-Place Qualifiers
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -400,6 +426,8 @@
       saveResult,
       saveGroupStandings,
       getAllGroupStandings,
+      saveThirdPlaceQualifiers,
+      getThirdPlaceQualifiers,
       getAllUsers,
       getAllPicks,
     } from "./firebase.js";
@@ -407,11 +435,12 @@
     /* global TOURNAMENT_DATA, getTeamFlag, getGroupTeams */
 
     // ── State ──
-    let allKoResults    = {};
-    let allGroupResults = {};  // { A: { standings: [...] }, ... }
-    let allUsers        = [];
-    let allPicks        = [];
-    let config          = {};
+    let allKoResults          = {};
+    let allGroupResults       = {};  // { A: { standings: [...] }, ... }
+    let actualThirdQualifiers = [];  // 8 team names that actually advanced as 3rd-place
+    let allUsers              = [];
+    let allPicks              = [];
+    let config                = {};
 
     const GROUPS      = ["A","B","C","D","E","F","G","H","I","J","K","L"];
     const ROUND_ORDER = ["R32","R16","QF","SF","3RD","FINAL"];
@@ -722,6 +751,7 @@
         toast(`Group ${g} standings saved!`, "success");
         updateStats();
         renderSummary();
+        renderThirdQualifiersPanel();
       } catch (err) {
         console.error(err);
         status.textContent = "Save failed";
@@ -871,14 +901,100 @@
     }
 
     // ─────────────────────────────────────
+    // THIRD-PLACE QUALIFIERS
+    // ─────────────────────────────────────
+
+    // Gather all teams that actually finished 3rd in their group (from entered standings)
+    function getActual3rdPlaceTeams() {
+      return GROUPS
+        .filter(g => allGroupResults[g]?.standings?.length === 4)
+        .map(g => ({ group: g, team: allGroupResults[g].standings[2] }));
+    }
+
+    function renderThirdQualifiersPanel() {
+      const groupsDone = GROUPS.filter(g => allGroupResults[g]?.standings?.length === 4).length;
+      const section    = document.getElementById("thirdQualifiersSection");
+
+      if (groupsDone < 12) {
+        section.style.display = "none";
+        return;
+      }
+      section.style.display = "block";
+
+      const thirdTeams = getActual3rdPlaceTeams();
+      const savedSet   = new Set(actualThirdQualifiers);
+      const count      = savedSet.size;
+
+      document.getElementById("thirdQualCount").textContent =
+        `${count} / 8 ${count === 8 ? '✓' : 'entered'}`;
+      document.getElementById("thirdQualStatus").textContent =
+        count === 8 ? `✓ Saved: ${actualThirdQualifiers.join(", ")}` : `Select 8 teams, then save.`;
+      document.getElementById("thirdQualStatus").style.color =
+        count === 8 ? "var(--success)" : "var(--muted)";
+
+      document.getElementById("thirdQualGrid").innerHTML = thirdTeams.map(({ group, team }) => {
+        const checked = savedSet.has(team);
+        const cbId    = `tq_${team.replace(/\W/g,"_")}`;
+        return `
+          <div style="display:flex;align-items:center;gap:.5rem;padding:.45rem .65rem;
+                      background:${checked?'var(--green-light)':'var(--bg)'};
+                      border:1.5px solid ${checked?'var(--green-mid)':'var(--border)'};
+                      border-radius:var(--radius); cursor:pointer; transition:all .13s;"
+               onclick="toggleThirdQual('${team}', document.getElementById('${cbId}'))">
+            <input type="checkbox" id="${cbId}" value="${team}" ${checked?'checked':''}
+                   style="accent-color:var(--green); width:14px; height:14px; flex-shrink:0; cursor:pointer;"
+                   onclick="event.stopPropagation(); toggleThirdQual('${team}', this)">
+            <span style="font-size:1rem;">${getTeamFlag(team)}</span>
+            <span style="font-size:.83rem; font-weight:600; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${team}</span>
+            <span style="font-family:var(--font-head);font-size:.62rem;font-weight:700;letter-spacing:.06em;
+                         color:var(--muted);background:var(--white);border:1px solid var(--border);
+                         padding:.1rem .4rem;border-radius:3px;flex-shrink:0;">Grp ${group}</span>
+          </div>`;
+      }).join("");
+    }
+
+    window.toggleThirdQual = function(team, el) {
+      const savedSet = new Set(actualThirdQualifiers);
+      if (el.checked) {
+        if (savedSet.size >= 8) { el.checked = false; toast("Already 8 selected.", "error"); return; }
+        savedSet.add(team);
+      } else {
+        savedSet.delete(team);
+      }
+      actualThirdQualifiers = [...savedSet];
+      renderThirdQualifiersPanel();
+    };
+
+    window.saveThirdQualifiers = async function() {
+      if (actualThirdQualifiers.length !== 8) {
+        toast("Please select exactly 8 third-place qualifiers.", "error"); return;
+      }
+      const btn = document.getElementById("saveThirdBtn");
+      btn.disabled = true;
+      btn.innerHTML = `<div class="spinner" style="width:11px;height:11px;border-width:2px;"></div>`;
+      try {
+        await saveThirdPlaceQualifiers(actualThirdQualifiers);
+        toast("Third-place qualifiers saved! ✓", "success");
+        renderThirdQualifiersPanel();
+      } catch (err) {
+        console.error(err);
+        toast("Save failed. Check connection.", "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Save Third-Place Qualifiers`;
+      }
+    };
+
+    // ─────────────────────────────────────
     // INIT
     // ─────────────────────────────────────
     async function initAdmin() {
       try {
-        [config, allKoResults, allGroupResults, allUsers, allPicks] = await Promise.all([
+        [config, allKoResults, allGroupResults, actualThirdQualifiers, allUsers, allPicks] = await Promise.all([
           getTournamentConfig(),
           getAllResults(),
           getAllGroupStandings(),
+          getThirdPlaceQualifiers().then(r => r || []),
           getAllUsers(),
           getAllPicks(),
         ]);
@@ -887,6 +1003,7 @@
         renderPhaseControl();
         renderSummary();
         renderGroupStandingsTab();
+        renderThirdQualifiersPanel();
         renderKnockoutResults();
         renderPlayers();
 

@@ -9,7 +9,6 @@ import {
   doc,
   getDoc,
   setDoc,
-  updateDoc,
   collection,
   getDocs,
   serverTimestamp,
@@ -37,11 +36,9 @@ const db  = getFirestore(app);
 export function getSessionUser() {
   return sessionStorage.getItem("wc2026_user") || null;
 }
-
 export function setSessionUser(username) {
   sessionStorage.setItem("wc2026_user", username);
 }
-
 export function clearSessionUser() {
   sessionStorage.removeItem("wc2026_user");
 }
@@ -51,24 +48,19 @@ export function clearSessionUser() {
 // -----------------------------------------------------------
 
 export async function userExists(username) {
-  const ref  = doc(db, "users", username.toLowerCase());
-  const snap = await getDoc(ref);
+  const snap = await getDoc(doc(db, "users", username.toLowerCase()));
   return snap.exists();
 }
-
 export async function createUser(username) {
-  const key = username.toLowerCase();
-  await setDoc(doc(db, "users", key), {
+  await setDoc(doc(db, "users", username.toLowerCase()), {
     displayName: username,
     createdAt:   serverTimestamp(),
   });
 }
-
 export async function getUser(username) {
   const snap = await getDoc(doc(db, "users", username.toLowerCase()));
   return snap.exists() ? snap.data() : null;
 }
-
 export async function getAllUsers() {
   const snap = await getDocs(collection(db, "users"));
   return snap.docs.map(d => ({ username: d.id, ...d.data() }));
@@ -79,39 +71,34 @@ export async function getAllUsers() {
 // -----------------------------------------------------------
 
 /**
- * Save Phase 1 picks (group standings predictions + tournament winner)
+ * Save Phase 1 picks.
  *
- * groupPicks format (NEW — standings-based):
- *   { A: ["Mexico","South Africa","South Korea","UEFA Path D"], B: [...], ... }
- *   Each value is an ordered array of 4 team names (1st → 4th place prediction)
+ * groupPicks format:
+ *   {
+ *     A: ["Mexico","South Africa","South Korea","UEFA Path D"],   // 1st→4th predictions
+ *     ...
+ *     L: [...],
+ *     thirdPlaceAdvancing: ["Mexico","Brazil",...]  // 8 teams picked to qualify as 3rd-place
+ *   }
  *
  * winnerPick: "Spain"
  */
 export async function savePhase1Picks(username, groupPicks, winnerPick) {
-  const key = username.toLowerCase();
   await setDoc(
-    doc(db, "picks", key),
-    {
-      groupPicks,
-      winnerPick,
-      phase1SubmittedAt: serverTimestamp(),
-    },
+    doc(db, "picks", username.toLowerCase()),
+    { groupPicks, winnerPick, phase1SubmittedAt: serverTimestamp() },
     { merge: true }
   );
 }
 
 /**
- * Save Phase 2 picks (knockout stage)
+ * Save Phase 2 picks (knockout stage).
  * knockoutPicks: { match_73: "Brazil", match_74: "Germany", ... }
  */
 export async function savePhase2Picks(username, knockoutPicks) {
-  const key = username.toLowerCase();
   await setDoc(
-    doc(db, "picks", key),
-    {
-      knockoutPicks,
-      phase2SubmittedAt: serverTimestamp(),
-    },
+    doc(db, "picks", username.toLowerCase()),
+    { knockoutPicks, phase2SubmittedAt: serverTimestamp() },
     { merge: true }
   );
 }
@@ -120,7 +107,6 @@ export async function getUserPicks(username) {
   const snap = await getDoc(doc(db, "picks", username.toLowerCase()));
   return snap.exists() ? snap.data() : null;
 }
-
 export async function getAllPicks() {
   const snap = await getDocs(collection(db, "picks"));
   return snap.docs.map(d => ({ username: d.id, ...d.data() }));
@@ -132,52 +118,55 @@ export async function getAllPicks() {
 
 /**
  * Save the final standings for a group.
- * groupId:    "A" through "L"
- * standings:  ["Mexico", "South Africa", "South Korea", "UEFA Path D"]  (1st → 4th)
+ * groupId:   "A"–"L"
+ * standings: ["Mexico","South Africa","South Korea","UEFA Path D"]  (1st→4th)
  */
 export async function saveGroupStandings(groupId, standings) {
   await setDoc(
     doc(db, "results", `group_${groupId}`),
-    {
-      type:      "groupStandings",
-      groupId,
-      standings, // ordered array: [1st, 2nd, 3rd, 4th]
-      enteredAt: serverTimestamp(),
-    },
+    { type: "groupStandings", groupId, standings, enteredAt: serverTimestamp() },
     { merge: true }
   );
 }
 
-/**
- * Get final standings for a single group.
- * Returns { standings: [...], enteredAt } or null.
- */
 export async function getGroupStandings(groupId) {
   const snap = await getDoc(doc(db, "results", `group_${groupId}`));
   return snap.exists() ? snap.data() : null;
 }
 
 /**
- * Get all group standings results.
- * Returns object keyed by groupId: { A: { standings: [...] }, B: {...}, ... }
+ * Get all 12 group standings.
+ * Returns { A: { standings: [...] }, B: {...}, ... }
  */
 export async function getAllGroupStandings() {
   const groups = ["A","B","C","D","E","F","G","H","I","J","K","L"];
   const result = {};
-  await Promise.all(
-    groups.map(async g => {
-      const snap = await getDoc(doc(db, "results", `group_${g}`));
-      if (snap.exists()) result[g] = snap.data();
-    })
-  );
+  await Promise.all(groups.map(async g => {
+    const snap = await getDoc(doc(db, "results", `group_${g}`));
+    if (snap.exists()) result[g] = snap.data();
+  }));
   return result;
 }
 
 /**
- * Save/update the result for a single knockout match.
- * matchId:  "match_73"
- * winner:   "Brazil"
- * phase:    "knockout"
+ * Save which 3rd-place teams actually advanced (admin enters this after group stage).
+ * advancingTeams: array of 8 team name strings
+ */
+export async function saveThirdPlaceQualifiers(advancingTeams) {
+  await setDoc(
+    doc(db, "results", "third_place_qualifiers"),
+    { teams: advancingTeams, enteredAt: serverTimestamp() },
+    { merge: true }
+  );
+}
+
+export async function getThirdPlaceQualifiers() {
+  const snap = await getDoc(doc(db, "results", "third_place_qualifiers"));
+  return snap.exists() ? snap.data().teams : null;
+}
+
+/**
+ * Save/update the result for a knockout match.
  */
 export async function saveResult(matchId, winner, phase) {
   await setDoc(
@@ -186,23 +175,21 @@ export async function saveResult(matchId, winner, phase) {
     { merge: true }
   );
 }
-
 export async function getResult(matchId) {
   const snap = await getDoc(doc(db, "results", matchId));
   return snap.exists() ? snap.data() : null;
 }
 
 /**
- * Get all results (knockout matches).
- * Returns object keyed by matchId: { match_73: { winner, phase }, ... }
- * NOTE: group_A through group_L docs are excluded (handled by getAllGroupStandings).
+ * Get all knockout match results.
+ * Returns { match_73: { winner, phase }, ... }
+ * Excludes group_* and third_place_qualifiers docs.
  */
 export async function getAllResults() {
   const snap = await getDocs(collection(db, "results"));
   const results = {};
   snap.docs.forEach(d => {
-    // Skip group standings docs — those are handled separately
-    if (!d.id.startsWith("group_")) {
+    if (!d.id.startsWith("group_") && d.id !== "third_place_qualifiers") {
       results[d.id] = d.data();
     }
   });
@@ -218,14 +205,8 @@ const CONFIG_REF = doc(db, "config", "tournament");
 export async function getTournamentConfig() {
   const snap = await getDoc(CONFIG_REF);
   if (snap.exists()) return snap.data();
-  return {
-    phase1Locked:      false,
-    phase2Locked:      false,
-    currentPhase:      1,
-    tournamentStarted: false,
-  };
+  return { phase1Locked: false, phase2Locked: false, currentPhase: 1, tournamentStarted: false };
 }
-
 export async function updateTournamentConfig(updates) {
   await setDoc(CONFIG_REF, updates, { merge: true });
 }
@@ -236,9 +217,7 @@ export async function updateTournamentConfig(updates) {
 
 const ADMIN_PIN = "lucasiscool";   // ← change before launch
 
-export function checkAdminPin(pin) {
-  return pin === ADMIN_PIN;
-}
+export function checkAdminPin(pin) { return pin === ADMIN_PIN; }
 
 // -----------------------------------------------------------
 // LEADERBOARD SCORING
@@ -247,30 +226,34 @@ export function checkAdminPin(pin) {
 /**
  * Score group standings predictions.
  *
- * Scoring per position per group:
- *   +3  exact position match (predicted 1st and they finished 1st, etc.)
- *   +1  correctly predicted whether a team advances (top 2) or is eliminated (bottom 2)
+ * Advancement tiers (for the +1 consolation point):
+ *   - Position 1 or 2 in group  → always advances
+ *   - Position 3 in group       → advances ONLY if in actualThirdPlaceQualifiers
+ *   - Position 4 in group       → always eliminated
  *
- * So max per group = 4 teams × (up to 4 pts each in best case) = varies
- * Realistic max per group = 4 × (3+1) = 16 pts, but +1 is conditional on not getting exact
+ * Points per predicted team slot:
+ *   +3  exact position match
+ *   +1  wrong position but correct tier (advance vs eliminated), using
+ *        user's own thirdPlaceAdvancing picks for predicted tier and
+ *        actualThirdPlaceQualifiers for actual tier
+ *   0   otherwise
  *
- * Actual scoring breakdown per team slot:
- *   - Exact position:                   +3 pts
- *   - Not exact, but advance/elim tier: +1 pt  (predicted to advance and they advanced, OR predicted eliminated and they were eliminated)
- *   - Complete miss:                     0 pts
- *
- * @param {Object} groupPicks     — { A: ["Mexico","...","...","..."], ... }
- * @param {Object} groupStandings — { A: { standings: ["Mexico","...","...","..."] }, ... }
- * @returns {Object} { total, byGroup: { A: { pts, detail: [{team,predicted,actual,pts}] } } }
+ * @param {Object}   groupPicks               — { A: [t,t,t,t], ..., thirdPlaceAdvancing: [...] }
+ * @param {Object}   groupStandings           — { A: { standings: [t,t,t,t] }, ... }
+ * @param {string[]} actualThirdPlaceQualifiers — 8 teams that actually advanced as 3rd-place (or null if not yet entered)
  */
-export function scoreGroupStandings(groupPicks, groupStandings) {
+export function scoreGroupStandings(groupPicks, groupStandings, actualThirdPlaceQualifiers) {
   const GROUPS = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+  const actualThirdSet = new Set(actualThirdPlaceQualifiers || []);
+  // User's predicted 3rd-place advancers
+  const predictedThirdSet = new Set(Array.isArray(groupPicks?.thirdPlaceAdvancing) ? groupPicks.thirdPlaceAdvancing : []);
+
   let total = 0;
   const byGroup = {};
 
   GROUPS.forEach(g => {
-    const predicted = groupPicks?.[g];   // array of 4 teams in predicted order
-    const actual    = groupStandings?.[g]?.standings; // array of 4 teams in actual order
+    const predicted = groupPicks?.[g];
+    const actual    = groupStandings?.[g]?.standings;
 
     if (!predicted || !Array.isArray(predicted) || predicted.length < 4 ||
         !actual    || !Array.isArray(actual)    || actual.length < 4) {
@@ -283,32 +266,26 @@ export function scoreGroupStandings(groupPicks, groupStandings) {
 
     for (let i = 0; i < 4; i++) {
       const predictedTeam = predicted[i];
-      const actualTeam    = actual[i];
-      const actualPos     = actual.indexOf(predictedTeam); // where they actually finished
+      const actualPos     = actual.indexOf(predictedTeam); // 0-based index in actual standings
 
       let pts = 0;
 
-      if (predictedTeam === actualTeam) {
-        // Exact position
+      if (predicted[i] === actual[i]) {
+        // Exact position match
         pts = 3;
       } else if (actualPos !== -1) {
-        // Team is in the results, just wrong position
-        // +1 if advance/eliminate tier is correct
-        // predicted positions 0,1 = advance tier; 2,3 = eliminate tier
-        const predictedAdvances = i <= 1;
-        const actuallyAdvances  = actualPos <= 1;
-        if (predictedAdvances === actuallyAdvances) {
-          pts = 1;
+        // Team is in results but at the wrong position.
+        // Award +1 if the advance/eliminate tier prediction is correct.
+        // Only applies when actualThirdPlaceQualifiers has been entered.
+        if (actualThirdPlaceQualifiers !== null) {
+          const predictedAdvances = teamPredictedToAdvance(predictedTeam, i, predictedThirdSet);
+          const actuallyAdvances  = teamActuallyAdvances(predictedTeam, actualPos, actualThirdSet);
+          if (predictedAdvances === actuallyAdvances) pts = 1;
         }
       }
 
       groupPts += pts;
-      detail.push({
-        team: predictedTeam,
-        predictedPos: i + 1,
-        actualPos: actualPos + 1,
-        pts,
-      });
+      detail.push({ team: predictedTeam, predictedPos: i + 1, actualPos: actualPos + 1, pts });
     }
 
     byGroup[g] = { pts: groupPts, detail, entered: true };
@@ -319,22 +296,45 @@ export function scoreGroupStandings(groupPicks, groupStandings) {
 }
 
 /**
- * Calculate scores for all participants.
- * allPicks:         array from getAllPicks()
- * allKoResults:     object from getAllResults() (knockout matches only)
- * allGroupResults:  object from getAllGroupStandings()
- * scoring:          TOURNAMENT_DATA.scoring
- *
- * Returns sorted array:
- * [{ username, score, breakdown: { groupStage, knockout, winner } }, ...]
+ * Did the user predict this team would advance?
+ * - Predicted pos 0 or 1 (1st/2nd): always advances
+ * - Predicted pos 2 (3rd): advances only if user picked them in thirdPlaceAdvancing
+ * - Predicted pos 3 (4th): always eliminated
  */
-export function calculateScores(allPicks, allKoResults, allGroupResults, scoring) {
+function teamPredictedToAdvance(team, predictedIdx, predictedThirdSet) {
+  if (predictedIdx <= 1) return true;
+  if (predictedIdx === 2) return predictedThirdSet.has(team);
+  return false; // 4th place
+}
+
+/**
+ * Did this team actually advance?
+ * - Actual pos 0 or 1 (1st/2nd): always advances
+ * - Actual pos 2 (3rd): advances only if in actualThirdSet
+ * - Actual pos 3 (4th): always eliminated
+ */
+function teamActuallyAdvances(team, actualIdx, actualThirdSet) {
+  if (actualIdx <= 1) return true;
+  if (actualIdx === 2) return actualThirdSet.has(team);
+  return false; // 4th place
+}
+
+/**
+ * Calculate scores for all participants.
+ *
+ * @param {Array}    allPicks                  — from getAllPicks()
+ * @param {Object}   allKoResults              — from getAllResults()
+ * @param {Object}   allGroupResults           — from getAllGroupStandings()
+ * @param {string[]|null} actualThirdQualifiers — from getThirdPlaceQualifiers(), or null
+ * @param {Object}   scoring                   — TOURNAMENT_DATA.scoring
+ */
+export function calculateScores(allPicks, allKoResults, allGroupResults, actualThirdQualifiers, scoring) {
   return allPicks
     .map(entry => {
       const { username, groupPicks = {}, winnerPick, knockoutPicks = {} } = entry;
 
       // ── Group standings score ──
-      const { total: groupStagePoints } = scoreGroupStandings(groupPicks, allGroupResults);
+      const { total: groupStagePoints } = scoreGroupStandings(groupPicks, allGroupResults, actualThirdQualifiers);
 
       // ── Tournament winner pick ──
       let winnerPoints = 0;
@@ -366,22 +366,15 @@ export function calculateScores(allPicks, allKoResults, allGroupResults, scoring
       let knockoutPoints = 0;
       Object.entries(knockoutPicks).forEach(([matchId, pickedWinner]) => {
         const result = allKoResults[matchId];
-        if (!result) return;
-        if (result.winner === pickedWinner) {
+        if (result && result.winner === pickedWinner) {
           knockoutPoints += (knockoutScoreMap[matchId] || 0);
         }
       });
 
-      const total = groupStagePoints + knockoutPoints + winnerPoints;
-
       return {
         username,
-        score: total,
-        breakdown: {
-          groupStage: groupStagePoints,
-          knockout:   knockoutPoints,
-          winner:     winnerPoints,
-        },
+        score: groupStagePoints + knockoutPoints + winnerPoints,
+        breakdown: { groupStage: groupStagePoints, knockout: knockoutPoints, winner: winnerPoints },
       };
     })
     .sort((a, b) => b.score - a.score);

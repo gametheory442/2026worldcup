@@ -9,8 +9,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* ── Leaderboard-specific styles ── */
-
     .podium-section { margin-bottom: 2rem; }
     .podium-row { display: flex; align-items: flex-end; justify-content: center; gap: .75rem; padding: 1.5rem 1rem 0; }
     .podium-item { display: flex; flex-direction: column; align-items: center; gap: .5rem; flex: 1; max-width: 170px; animation: riseUp .55s cubic-bezier(.22,.68,0,1.2) both; }
@@ -19,10 +17,15 @@
     .podium-item:nth-child(3) { animation-delay: .3s; }
     @keyframes riseUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
 
-    .podium-avatar { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-head); font-size: 1.2rem; font-weight: 700; color: #fff; flex-shrink: 0; position: relative; }
-    .podium-avatar.rank-1 { background: linear-gradient(135deg, var(--gold), #E8C060); box-shadow: 0 4px 16px rgba(200,168,75,.45); width: 62px; height: 62px; font-size: 1.45rem; }
-    .podium-avatar.rank-2 { background: linear-gradient(135deg, #9CA3AF, #B8BEC7); box-shadow: 0 4px 12px rgba(156,163,175,.35); }
-    .podium-avatar.rank-3 { background: linear-gradient(135deg, #CD7F32, #D99050); box-shadow: 0 4px 12px rgba(205,127,50,.35); }
+    .podium-avatar {
+      width: 52px; height: 52px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; flex-shrink: 0; position: relative;
+      border: 3px solid rgba(255,255,255,.5);
+    }
+    .podium-avatar.rank-1 { width: 64px; height: 64px; font-size: 2rem; box-shadow: 0 4px 16px rgba(200,168,75,.45); border-color: var(--gold); }
+    .podium-avatar.rank-2 { box-shadow: 0 4px 12px rgba(156,163,175,.35); border-color: #9CA3AF; }
+    .podium-avatar.rank-3 { box-shadow: 0 4px 12px rgba(205,127,50,.35); border-color: #CD7F32; }
     .podium-crown { position: absolute; top: -14px; font-size: 1rem; animation: crownBob 2.5s ease-in-out infinite; }
     @keyframes crownBob { 0%, 100% { transform: translateY(0) rotate(-5deg); } 50% { transform: translateY(-4px) rotate(5deg); } }
     .podium-name { font-family: var(--font-head); font-size: .85rem; font-weight: 600; letter-spacing: .04em; color: var(--dark); text-align: center; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
@@ -39,7 +42,6 @@
     .standings-header-title { font-family: var(--font-head); font-size: .9rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; display: flex; align-items: center; gap: .5rem; }
     .refresh-btn { display: flex; align-items: center; gap: .4rem; font-family: var(--font-body); font-size: .75rem; font-weight: 600; color: rgba(255,255,255,.85); background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); border-radius: var(--radius); padding: .3rem .75rem; cursor: pointer; transition: all .15s; }
     .refresh-btn:hover { background: rgba(255,255,255,.25); color: #fff; }
-    .refresh-btn svg { transition: transform .4s; }
     .refresh-btn.spinning svg { animation: spin .65s linear infinite; }
 
     .lb-table { width: 100%; border-collapse: collapse; }
@@ -62,9 +64,15 @@
     .rank-3 { background: #CD7F32; color: #fff; }
     .rank-other { background: var(--bg); color: var(--muted); border: 1.5px solid var(--border); font-size: .75rem; }
 
+    /* Flag avatar — replaces initials */
     .player-cell { display: flex; align-items: center; gap: .65rem; }
-    .player-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--green-light); border: 1.5px solid var(--green-mid); display: flex; align-items: center; justify-content: center; font-family: var(--font-head); font-size: .8rem; font-weight: 700; color: var(--green); flex-shrink: 0; }
-    .player-avatar.gold-av { background: var(--gold-light); border-color: var(--gold); color: var(--gold-dark); }
+    .player-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--green-light); border: 1.5px solid var(--green-mid);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem; flex-shrink: 0; line-height: 1;
+    }
+    .player-avatar.gold-av { background: var(--gold-light); border-color: var(--gold); }
     .player-name { font-weight: 600; font-size: .875rem; color: var(--dark); }
     .player-name.is-me-label::after { content: " (you)"; font-weight: 400; color: var(--green); font-size: .78rem; }
 
@@ -109,7 +117,7 @@
     .signout-btn:hover { background: rgba(255,255,255,.15); color: #fff; border-color: rgba(255,255,255,.45); }
 
     @media (max-width: 700px) {
-      .podium-avatar.rank-1 { width: 52px; height: 52px; font-size: 1.1rem; }
+      .podium-avatar.rank-1 { width: 54px; height: 54px; font-size: 1.7rem; }
       .podium-score { font-size: 1.3rem; }
       .podium-item:nth-child(2) .podium-score { font-size: 1.6rem; }
       .podium-block.p1 { height: 55px; } .podium-block.p2 { height: 40px; } .podium-block.p3 { height: 28px; }
@@ -144,10 +152,10 @@
 
     <div class="page-header" style="margin-bottom:1.25rem">
       <div class="page-title">🏆 Leaderboard</div>
-      <div class="page-subtitle" id="pageSubtitle">Live standings · updates every 60 seconds</div>
+      <div class="page-subtitle">Live standings · updates every 60 seconds</div>
     </div>
 
-    <!-- Podium (top 3) -->
+    <!-- Podium -->
     <div class="card podium-section" id="podiumSection" style="display:none; padding-bottom:0; overflow:hidden;">
       <div class="card-title" style="padding:1rem 1.5rem 0; margin-bottom:0;">🥇 Top 3</div>
       <div class="podium-row" id="podiumRow"></div>
@@ -166,7 +174,7 @@
           Full Standings
         </div>
         <button class="refresh-btn" id="refreshBtn" onclick="doRefresh()">
-          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" id="refreshIcon">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
             <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
           </svg>
@@ -223,7 +231,7 @@
         <div class="sg-item"><span class="sg-label">Correct Final winner</span><span class="sg-pts">+12</span></div>
       </div>
       <p style="font-size:.75rem;color:var(--muted);margin-top:.85rem;">
-        Group stage: up to <strong style="color:var(--dark)">16 pts per group</strong> · Picks lock June 11, 3 PM ET.
+        Top 2 per group always advance · 4th always eliminated · 3rd advances based on your Step 2 qualifier picks.
       </p>
     </div>
 
@@ -244,47 +252,55 @@
       getAllPicks,
       getAllResults,
       getAllGroupStandings,
+      getThirdPlaceQualifiers,
       getAllUsers,
       calculateScores,
     } from "./firebase.js";
 
-    /* global TOURNAMENT_DATA, getTeamFlag */
+    /* global TOURNAMENT_DATA */
 
     let currentUser    = null;
     let countdown      = 60;
     let countdownTimer = null;
     let isRefreshing   = false;
 
-    function initials(name) {
-      return name.split(/\s+/).slice(0,2).map(w => w[0]).join("").toUpperCase();
-    }
-    function fmtTime(date) {
-      return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-    }
+    // Returns the flag emoji for the winner pick team (for the champion column)
     function winnerFlag(teamKey) {
       if (!teamKey) return "";
-      const team = TOURNAMENT_DATA.teams[teamKey];
-      return team ? team.flag : "🏳️";
+      return TOURNAMENT_DATA.teams[teamKey]?.flag || "🏳️";
+    }
+
+    // Returns a flag emoji for a player's champion pick to use in their avatar.
+    // Falls back to the winner pick's flag if available, otherwise a generic person.
+    function playerAvatarEmoji(winnerPick) {
+      if (winnerPick) return TOURNAMENT_DATA.teams[winnerPick]?.flag || "🏳️";
+      return "👤";
+    }
+
+    function fmtTime(date) {
+      return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
     }
 
     function renderPodium(scores) {
       if (scores.length < 2) { document.getElementById("podiumSection").style.display = "none"; return; }
       const top3  = scores.slice(0, Math.min(3, scores.length));
+      // Display order: 2nd left, 1st centre, 3rd right
       const order = top3.length === 1 ? [top3[0]]
         : top3.length === 2 ? [top3[1], top3[0]]
         : [top3[1], top3[0], top3[2]];
       const rankForItem = item => top3.indexOf(item) + 1;
 
       document.getElementById("podiumRow").innerHTML = order.map(entry => {
-        const rank   = rankForItem(entry);
-        const isMe   = entry.username === (currentUser || "").toLowerCase();
+        const rank    = rankForItem(entry);
+        const isMe    = entry.username === (currentUser || "").toLowerCase();
         const display = entry.displayName || entry.username;
-        const avCls  = rank === 1 ? "rank-1" : rank === 2 ? "rank-2" : "rank-3";
+        const avCls   = rank === 1 ? "rank-1" : rank === 2 ? "rank-2" : "rank-3";
+        const flag    = playerAvatarEmoji(entry.winnerPick);
         return `
           <div class="podium-item">
             <div class="podium-avatar ${avCls}">
               ${rank === 1 ? `<span class="podium-crown">👑</span>` : ""}
-              ${initials(display)}
+              ${flag}
             </div>
             <div class="podium-name">${display}${isMe ? " ★" : ""}</div>
             <div class="podium-score">${entry.score}</div>
@@ -297,26 +313,28 @@
     function renderTable(scores, picks) {
       const tbody = document.getElementById("lbBody");
       if (!scores.length) {
-        document.getElementById("tableWrap").style.display = "none";
-        document.getElementById("emptyState").style.display  = "block";
+        document.getElementById("tableWrap").style.display  = "none";
+        document.getElementById("emptyState").style.display = "block";
         return;
       }
-      document.getElementById("tableWrap").style.display = "block";
-      document.getElementById("emptyState").style.display  = "none";
+      document.getElementById("tableWrap").style.display  = "block";
+      document.getElementById("emptyState").style.display = "none";
 
+      // Build a map: username → winnerPick (for avatar flag)
       const picksMap = {};
       picks.forEach(p => { picksMap[p.username] = p.winnerPick || null; });
 
       tbody.innerHTML = scores.map((entry, idx) => {
-        const rank    = idx + 1;
-        const isMe    = entry.username === (currentUser || "").toLowerCase();
-        const display = entry.displayName || entry.username;
-        const wp      = picksMap[entry.username];
-        const wpFlag  = wp ? winnerFlag(wp) : "";
-        const bd      = entry.breakdown || {};
+        const rank      = idx + 1;
+        const isMe      = entry.username === (currentUser || "").toLowerCase();
+        const display   = entry.displayName || entry.username;
+        const wp        = picksMap[entry.username];
+        const wpFlag    = wp ? winnerFlag(wp) : "";
+        const bd        = entry.breakdown || {};
         const hasScored = entry.score > 0;
+        const avatarEmoji = playerAvatarEmoji(wp);
 
-        let rankBadge = rank === 1 ? `<span class="rank-badge rank-1">1</span>`
+        const rankBadge = rank === 1 ? `<span class="rank-badge rank-1">1</span>`
           : rank === 2 ? `<span class="rank-badge rank-2">2</span>`
           : rank === 3 ? `<span class="rank-badge rank-3">3</span>`
           : `<span class="rank-badge rank-other">${rank}</span>`;
@@ -326,7 +344,7 @@
             <td class="center"><div class="rank-cell">${rankBadge}</div></td>
             <td>
               <div class="player-cell">
-                <div class="player-avatar ${rank === 1 ? 'gold-av' : ''}">${initials(display)}</div>
+                <div class="player-avatar ${rank === 1 ? 'gold-av' : ''}" title="${wp ? 'Picked: ' + wp : 'No champion pick'}">${avatarEmoji}</div>
                 <span class="player-name ${isMe ? "is-me-label" : ""}">${display}</span>
               </div>
             </td>
@@ -343,25 +361,33 @@
 
     async function loadLeaderboard() {
       try {
-        const [allPicksDocs, allKoResults, allGroupResults, allUsers] = await Promise.all([
+        const [allPicksDocs, allKoResults, allGroupResults, actualThirdQualifiers, allUsers] = await Promise.all([
           getAllPicks(),
           getAllResults(),
-          getAllGroupStandings(),   // ← NEW: fetch group standings
+          getAllGroupStandings(),
+          getThirdPlaceQualifiers(),   // null until admin enters them
           getAllUsers(),
         ]);
 
         const displayMap = {};
         allUsers.forEach(u => { displayMap[u.username] = u.displayName || u.username; });
 
-        // Pass allGroupResults as 3rd argument (new signature)
+        // Build a winnerPick map for avatar display
+        const wpMap = {};
+        allPicksDocs.forEach(p => { wpMap[p.username] = p.winnerPick || null; });
+
         const scores = calculateScores(
           allPicksDocs,
           allKoResults,
           allGroupResults,
+          actualThirdQualifiers,   // null → +1 tier points not awarded yet (fine before group stage ends)
           TOURNAMENT_DATA.scoring
         );
 
-        scores.forEach(s => { s.displayName = displayMap[s.username] || s.username; });
+        scores.forEach(s => {
+          s.displayName = displayMap[s.username] || s.username;
+          s.winnerPick  = wpMap[s.username] || null;
+        });
 
         renderPodium(scores);
         renderTable(scores, allPicksDocs);
@@ -386,24 +412,20 @@
     window.doRefresh = async function() {
       if (isRefreshing) return;
       isRefreshing = true;
-      const btn  = document.getElementById("refreshBtn");
+      const btn = document.getElementById("refreshBtn");
       btn.classList.add("spinning"); btn.disabled = true;
       clearInterval(countdownTimer);
-      try {
-        await loadLeaderboard();
-      } finally {
+      try { await loadLeaderboard(); }
+      finally {
         btn.classList.remove("spinning"); btn.disabled = false;
-        isRefreshing = false;
-        startCountdown();
+        isRefreshing = false; startCountdown();
       }
     };
 
     function startCountdown() {
-      countdown = 60;
-      updateCountdownUI();
+      countdown = 60; updateCountdownUI();
       countdownTimer = setInterval(async () => {
-        countdown--;
-        updateCountdownUI();
+        countdown--; updateCountdownUI();
         if (countdown <= 0) {
           clearInterval(countdownTimer);
           if (!isRefreshing) {
@@ -412,8 +434,7 @@
             try { await loadLeaderboard(); }
             finally {
               document.getElementById("refreshBtn").classList.remove("spinning");
-              isRefreshing = false;
-              startCountdown();
+              isRefreshing = false; startCountdown();
             }
           }
         }
