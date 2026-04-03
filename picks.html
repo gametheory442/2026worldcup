@@ -6,6 +6,14 @@
   <title>My Picks — WC2026 Family Bracket</title>
   <link rel="stylesheet" href="style.css" />
   <style>
+    /* ── Emoji flag fix — force system emoji font everywhere flags appear ── */
+    .team-flag,
+    .winner-label .flag,
+    .third-team-label .flag,
+    .group-header-flags {
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif !important;
+    }
+
     .signout-btn {
       display: inline-flex; align-items: center; gap: .3rem;
       font-family: var(--font-body); font-size: .72rem; font-weight: 600;
@@ -105,7 +113,10 @@
     .rank-number.pos-4 { background: var(--bg); color: var(--muted); border: 1.5px solid var(--border); font-size: .75rem; }
 
     .team-info { display: flex; align-items: center; gap: .55rem; min-width: 0; }
-    .team-flag { font-size: 1.15rem; flex-shrink: 0; line-height: 1; }
+    .team-flag {
+      font-size: 1.25rem; flex-shrink: 0; line-height: 1;
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif;
+    }
     .team-name-text {
       font-size: .85rem; font-weight: 600; color: var(--dark);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -185,7 +196,10 @@
       background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius);
       font-size: .83rem; font-weight: 500; cursor: pointer; transition: all .13s; user-select: none;
     }
-    .third-team-label .flag { font-size: 1.05rem; flex-shrink: 0; line-height: 1; }
+    .third-team-label .flag {
+      font-size: 1.15rem; flex-shrink: 0; line-height: 1;
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif;
+    }
     .third-team-label .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
     .third-team-label .group-badge {
       font-family: var(--font-head); font-size: .62rem; font-weight: 700; letter-spacing: .06em;
@@ -218,7 +232,10 @@
       background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius);
       font-size: .8rem; font-weight: 500; cursor: pointer; transition: all .13s; user-select: none;
     }
-    .winner-label .flag { font-size: .95rem; flex-shrink: 0; }
+    .winner-label .flag {
+      font-size: 1rem; flex-shrink: 0;
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif;
+    }
     .winner-label .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .winner-label:hover { border-color: var(--gold); background: var(--gold-light); }
     .winner-radio:checked + .winner-label { background: var(--gold); border-color: var(--gold-dark); color: #fff; font-weight: 700; }
@@ -230,7 +247,10 @@
       border-radius: var(--radius); font-weight: 600; font-size: .9rem;
     }
     .winner-selected-display.hidden { display: none; }
-    .winner-selected-display .flag { font-size: 1.5rem; }
+    .winner-selected-display .flag {
+      font-size: 1.5rem;
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif;
+    }
     .winner-pts { margin-left: auto; font-size: .75rem; color: var(--gold-dark); font-weight: 500; }
 
     /* Progress */
@@ -435,8 +455,8 @@
 
     const GROUPS = ["A","B","C","D","E","F","G","H","I","J","K","L"];
 
-    let groupStandings      = {};  // { A: [team,team,team,team], ... }
-    let thirdPlaceAdvancing = new Set();  // teams picked to advance as 3rd-place
+    let groupStandings      = {};
+    let thirdPlaceAdvancing = new Set();
     let winnerPick          = null;
     let currentGroup        = "A";
     let isLocked            = false;
@@ -447,9 +467,15 @@
     // ── Helpers ──
     function shortName(key) {
       const m = {
-        "United States":"USA","South Africa":"S. Africa","South Korea":"S. Korea",
-        "UEFA Path A":"UEFA A","UEFA Path B":"UEFA B","UEFA Path C":"UEFA C","UEFA Path D":"UEFA D",
-        "Intercontinental Path 1":"IC Path 1","Intercontinental Path 2":"IC Path 2",
+        "United States":        "USA",
+        "Bosnia & Herzegovina": "Bosnia & Herz.",
+        "South Africa":         "S. Africa",
+        "South Korea":          "S. Korea",
+        "Saudi Arabia":         "Saudi Arabia",
+        "Ivory Coast":          "Ivory Coast",
+        "New Zealand":          "New Zealand",
+        "Cape Verde":           "Cape Verde",
+        "DR Congo":             "DR Congo",
       };
       return m[key] || key;
     }
@@ -474,16 +500,13 @@
     function renderGroupCard() {
       const teams   = getGroupTeams(currentGroup);
       const ordered = groupStandings[currentGroup] ? [...groupStandings[currentGroup]] : [...teams];
-      // Flags row for header
       const flagsRow = teams.map(t => getTeamFlag(t)).join(" ");
 
-      const POSITION_PTS = ["+3 if exact", "+3 if exact", "+3 if exact", "+3 if exact"];
-
       const rankRows = ordered.map((team, idx) => {
-        const pos      = idx + 1;
-        const flag     = getTeamFlag(team);
-        const name     = shortName(team);
-        const tbdCls   = isTBD(team) ? " tbd" : "";
+        const pos    = idx + 1;
+        const flag   = getTeamFlag(team);
+        const name   = shortName(team);
+        const tbdCls = isTBD(team) ? " tbd" : "";
         return `
           <div class="rank-row rank-${pos}-style" data-group="${currentGroup}" data-team="${team}"
                draggable="${isLocked ? 'false' : 'true'}"
@@ -499,7 +522,7 @@
               <span class="team-flag">${flag}</span>
               <span class="team-name-text${tbdCls}">${name}</span>
             </div>
-            <span class="rank-pts-badge">${POSITION_PTS[idx]}</span>
+            <span class="rank-pts-badge">+3 if exact</span>
           </div>`;
       }).join("");
 
@@ -603,7 +626,6 @@
       markDirty(); updateProgress(); renderGroupTabs(); renderGroupCard(); renderThirdPlaceGrid();
     };
 
-    // If a group's 3rd-place slot changed, evict old team from thirdPlaceAdvancing
     function syncThirdPlaceAfterReorder(group) {
       if (!isGroupComplete(group)) return;
       const newThird = groupStandings[group][2];
@@ -630,9 +652,9 @@
       }
 
       const rows = thirdTeams.map(({ group, team }) => {
-        const checked     = thirdPlaceAdvancing.has(team);
-        const lockedCls   = (!checked && count >= 8 && !isLocked) ? " locked-out" : "";
-        const cbId        = `third_${team.replace(/\W/g,"_")}`;
+        const checked   = thirdPlaceAdvancing.has(team);
+        const lockedCls = (!checked && count >= 8 && !isLocked) ? " locked-out" : "";
+        const cbId      = `third_${team.replace(/\W/g,"_")}`;
         return `
           <input type="checkbox" class="third-team-checkbox" id="${cbId}" value="${team}"
                  ${checked ? 'checked' : ''} ${isLocked ? 'disabled' : ''}
@@ -724,7 +746,6 @@
       const btn = document.getElementById("saveBtn"), status = document.getElementById("saveStatus");
       btn.disabled = true; status.textContent = "Saving…"; status.className = "save-status saving";
       try {
-        // Store thirdPlaceAdvancing inside groupPicks object as a special key
         const picksToSave = { ...groupStandings, thirdPlaceAdvancing: [...thirdPlaceAdvancing] };
         await savePhase1Picks(currentUser, picksToSave, winnerPick);
         hasUnsaved = false;
@@ -756,7 +777,6 @@
 
         if (picks?.groupPicks && typeof picks.groupPicks === 'object') {
           const gp = picks.groupPicks;
-          // Only load if new format (keyed by group letter, not match_N)
           const first = Object.keys(gp).filter(k => k !== 'thirdPlaceAdvancing')[0];
           if (first && !first.startsWith('match_')) {
             GROUPS.forEach(g => { if (Array.isArray(gp[g]) && gp[g].length === 4) groupStandings[g] = gp[g]; });
@@ -765,7 +785,6 @@
         }
         if (picks?.winnerPick) winnerPick = picks.winnerPick;
 
-        // Init any un-ranked groups to default order
         GROUPS.forEach(g => { if (!isGroupComplete(g)) groupStandings[g] = [...getGroupTeams(g)]; });
 
         if (isLocked) {

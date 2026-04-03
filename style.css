@@ -31,6 +31,7 @@
   --radius-lg:   10px;
   --font-head:   'Oswald', sans-serif;
   --font-body:   'DM Sans', sans-serif;
+  --font-emoji:  'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif;
 }
 
 /* ── Reset ── */
@@ -46,6 +47,26 @@ body {
 a { color: inherit; text-decoration: none; }
 button { font-family: inherit; }
 img, svg { display: block; }
+
+/* ── Global emoji rendering fix ──
+   Flag emoji (regional indicator pairs) render as ISO codes when a
+   custom web font is active. Force the system emoji font on any element
+   that displays a flag or other emoji so they always render correctly.   */
+.emoji,
+.team-flag,
+.flag,
+.group-header-flags,
+.podium-avatar,
+.player-avatar,
+.winner-label .flag,
+.winner-selected-display .flag,
+.third-team-label .flag,
+.bracket-label .flag,
+.pick-label .flag span,
+.hero-football,
+.trophy-mark {
+  font-family: var(--font-emoji) !important;
+}
 
 /* ── Header ── */
 .site-header {
