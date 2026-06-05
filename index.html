@@ -409,6 +409,98 @@
       .login-input-row .btn { width: 100%; }
     }
 
+    /* ── Tab Bar ── */
+    .tab-bar {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      background: var(--white);
+      border-bottom: 2px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: .875rem .5rem;
+      font-family: var(--font-head);
+      font-size: .82rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .35rem;
+    }
+    .tab-btn:hover { color: var(--dark); }
+    .tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
+
+    /* ── Tab Panels ── */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Rules Tab ── */
+    .rules-wrap {
+      position: relative; z-index: 1;
+      padding: 1.5rem 1rem 2rem;
+      display: flex; justify-content: center;
+    }
+    .rules-inner { width: 100%; max-width: 560px; }
+    .rules-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .rules-card-header {
+      display: flex; align-items: center; gap: .5rem;
+      padding: .85rem 1.25rem;
+      background: var(--green); color: #fff;
+      font-family: var(--font-head); font-size: .85rem;
+      font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+    }
+    .rules-card-body { padding: 1.25rem; }
+    .scoring-guide {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: .5rem .75rem; font-size: .83rem;
+    }
+    .sg-item {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: .5rem;
+      padding: .4rem .6rem; background: var(--bg);
+      border-radius: var(--radius); border: 1px solid var(--border);
+    }
+    .sg-label { color: var(--text); flex: 1; }
+    .sg-pts {
+      font-family: var(--font-head); font-size: .8rem; font-weight: 700;
+      color: var(--green); background: var(--green-light);
+      padding: .1rem .45rem; border-radius: 4px; flex-shrink: 0;
+    }
+    .sg-pts.gold { color: var(--gold-dark); background: var(--gold-light); }
+    .rules-note { font-size: .78rem; color: var(--muted); margin-top: .85rem; line-height: 1.5; }
+    .rules-list {
+      list-style: none; padding: 0; margin: 0;
+      display: flex; flex-direction: column; gap: .5rem;
+    }
+    .rules-list li {
+      display: flex; align-items: flex-start; gap: .6rem;
+      font-size: .84rem; color: var(--text); line-height: 1.5;
+    }
+    .rules-list li .ri { flex-shrink: 0; font-size: .9rem; margin-top: .05rem; }
+
+    @media (max-width: 480px) {
+      .scoring-guide { grid-template-columns: 1fr; }
+      .tab-btn { font-size: .72rem; padding: .75rem .25rem; }
+    }
+
     .site-footer {
       position: relative;
       z-index: 1;
@@ -433,6 +525,149 @@
   <div style="font-size:.78rem;color:rgba(255,255,255,.65);">June 11 – July 19, 2026</div>
 </header>
 
+<!-- Tab Bar -->
+<nav class="tab-bar" role="tablist">
+  <button class="tab-btn" id="tab-rules" role="tab" aria-controls="panel-rules" onclick="switchTab('rules')">
+    📋 Rules
+  </button>
+  <button class="tab-btn" id="tab-standings" role="tab" aria-controls="panel-standings" onclick="switchTab('standings')">
+    📊 Standings
+  </button>
+  <button class="tab-btn" id="tab-picks" role="tab" aria-controls="panel-picks" onclick="switchTab('picks')">
+    ⚽ Picks
+  </button>
+</nav>
+
+<!-- RULES TAB -->
+<div class="tab-panel" id="panel-rules" role="tabpanel">
+  <div class="rules-wrap">
+    <div class="rules-inner">
+
+      <!-- Phase 1 -->
+      <div class="rules-card">
+        <div class="rules-card-header" style="background: var(--green-dark);">
+          🟢 Phase 1 — Group Stage &amp; Champion Pick
+          <span style="margin-left:auto; font-size:.7rem; font-weight:500; opacity:.8; font-family:var(--font-body); text-transform:none; letter-spacing:0;">Opens now · Locks June 11, 3 PM ET</span>
+        </div>
+        <div class="rules-card-body">
+          <ul class="rules-list">
+            <li><span class="ri">1️⃣</span> Enter your name on the Picks tab to join.</li>
+            <li><span class="ri">2️⃣</span> <strong>Rank all 12 groups</strong> — drag teams into your predicted finishing order (1st through 4th) for each group. You are <em>not</em> picking individual match results.</li>
+            <li><span class="ri">3️⃣</span> <strong>Pick 8 third-place qualifiers</strong> — the best 8 of the 12 third-place finishers advance. Choose which 8 you think make it.</li>
+            <li><span class="ri">4️⃣</span> <strong>Pick your tournament champion</strong> — one team to lift the trophy on July 19. Worth a big bonus.</li>
+            <li><span class="ri">🔒</span> All Phase 1 picks lock on <strong>June 11 at 3 PM ET</strong> when the first match kicks off. No changes after that.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Phase 2 -->
+      <div class="rules-card">
+        <div class="rules-card-header" style="background: #2563EB;">
+          🔵 Phase 2 — Knockout Stage
+          <span style="margin-left:auto; font-size:.7rem; font-weight:500; opacity:.8; font-family:var(--font-body); text-transform:none; letter-spacing:0;">Opens June 11 · Locks June 28, 3 PM ET</span>
+        </div>
+        <div class="rules-card-body">
+          <ul class="rules-list">
+            <li><span class="ri">🏆</span> Once the group stage kicks off, the <strong>Bracket page unlocks</strong> and you can make knockout picks.</li>
+            <li><span class="ri">⚽</span> Pick the winner of every match from the <strong>Round of 32 through the Final</strong> — 32 matches total. No draws in knockout.</li>
+            <li><span class="ri">🔒</span> Knockout picks lock on <strong>June 28 at 3 PM ET</strong> when the Round of 32 begins. You have from June 11–28 to fill them in.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Scoring -->
+      <div class="rules-card">
+        <div class="rules-card-header">🏆 Scoring</div>
+        <div class="rules-card-body">
+          <p style="font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:.6rem;">Phase 1 — Group Stage</p>
+          <div class="scoring-guide" style="margin-bottom:1rem;">
+            <div class="sg-item"><span class="sg-label">Exact group finishing position</span><span class="sg-pts">+3</span></div>
+            <div class="sg-item"><span class="sg-label">Correct advance / eliminate tier</span><span class="sg-pts">+1</span></div>
+            <div class="sg-item" style="grid-column:1/-1"><span class="sg-label">Tournament champion (pre-tournament pick)</span><span class="sg-pts gold">+15</span></div>
+          </div>
+          <p style="font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:.6rem;">Phase 2 — Knockout Stage</p>
+          <div class="scoring-guide">
+            <div class="sg-item"><span class="sg-label">Correct Round of 32 winner</span><span class="sg-pts">+3</span></div>
+            <div class="sg-item"><span class="sg-label">Correct Round of 16 winner</span><span class="sg-pts">+5</span></div>
+            <div class="sg-item"><span class="sg-label">Correct Quarterfinal winner</span><span class="sg-pts">+7</span></div>
+            <div class="sg-item"><span class="sg-label">Correct Semifinal winner</span><span class="sg-pts">+9</span></div>
+            <div class="sg-item" style="grid-column:1/-1"><span class="sg-label">Correct Final winner</span><span class="sg-pts">+12</span></div>
+          </div>
+          <p class="rules-note">
+            Top 2 per group always advance · 4th is always eliminated · 3rd-place advancement depends on your Phase 1 qualifier picks.
+            The champion pick bonus only counts if you made the pick <em>before</em> June 11.
+          </p>
+        </div>
+      </div>
+
+      <!-- Good to Know -->
+      <div class="rules-card">
+        <div class="rules-card-header">ℹ️ Good to Know</div>
+        <div class="rules-card-body">
+          <ul class="rules-list">
+            <li><span class="ri">👀</span> Champion picks are hidden from everyone until June 11 — then all selections are revealed at once.</li>
+            <li><span class="ri">📊</span> The Standings tab updates live so anyone can track the leaderboard without logging in.</li>
+            <li><span class="ri">🏟️</span> 48 teams · 104 matches · 3 host countries (USA, Canada, Mexico) · Final at MetLife Stadium, July 19.</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- STANDINGS TAB -->
+<div class="tab-panel" id="panel-standings" role="tabpanel">
+  <div class="login-wrap" style="min-height:unset; padding-top:1.5rem;">
+    <div class="lb-preview-wrap" id="lbPreview" style="display:none">
+      <div class="lb-preview-inner">
+        <div class="lb-preview-header">
+          <div class="lb-preview-title">
+            <span class="lb-preview-icon">📊</span>
+            Current Standings
+          </div>
+          <div class="lb-preview-live">
+            <span class="lb-live-dot"></span>
+            Live
+          </div>
+        </div>
+        <div id="lbPreviewLoading" class="lb-preview-loading">
+          <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>
+          <span>Loading standings…</span>
+        </div>
+        <div id="lbPreviewEmpty" class="lb-preview-empty" style="display:none">
+          No picks submitted yet — be the first!
+        </div>
+        <div id="lbPreviewTable" style="display:none">
+          <table class="lb-preview-table">
+            <thead>
+              <tr>
+                <th style="width:36px">#</th>
+                <th>Player</th>
+                <th class="right">Score</th>
+                <th class="right hide-xs">Groups</th>
+                <th class="right hide-xs">Knockout</th>
+                <th class="right hide-xs">🏆</th>
+              </tr>
+            </thead>
+            <tbody id="lbPreviewBody"></tbody>
+          </table>
+        </div>
+        <div class="lb-preview-footer">
+          <a href="leaderboard.html" class="lb-preview-link">View full standings →</a>
+          <span id="lbPreviewUpdated" class="lb-preview-updated"></span>
+        </div>
+      </div>
+    </div>
+    <div id="lbPreviewInitLoading" style="display:flex;align-items:center;justify-content:center;gap:.65rem;padding:3rem 1rem;color:var(--muted);font-size:.85rem;">
+      <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>
+      <span>Loading standings…</span>
+    </div>
+  </div>
+</div>
+
+<!-- PICKS TAB -->
+<div class="tab-panel" id="panel-picks" role="tabpanel">
 <div class="login-wrap">
 
   <section class="login-hero">
@@ -505,59 +740,42 @@
     </div>
   </div>
 
-  <!-- Live Leaderboard Preview -->
-  <div class="lb-preview-wrap" id="lbPreview" style="display:none">
-    <div class="lb-preview-inner">
-      <div class="lb-preview-header">
-        <div class="lb-preview-title">
-          <span class="lb-preview-icon">📊</span>
-          Current Standings
-        </div>
-        <div class="lb-preview-live">
-          <span class="lb-live-dot"></span>
-          Live
-        </div>
-      </div>
-
-      <div id="lbPreviewLoading" class="lb-preview-loading">
-        <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>
-        <span>Loading standings…</span>
-      </div>
-
-      <div id="lbPreviewEmpty" class="lb-preview-empty" style="display:none">
-        No picks submitted yet — be the first!
-      </div>
-
-      <div id="lbPreviewTable" style="display:none">
-        <table class="lb-preview-table">
-          <thead>
-            <tr>
-              <th style="width:36px">#</th>
-              <th>Player</th>
-              <th class="right">Score</th>
-              <th class="right hide-xs">Groups</th>
-              <th class="right hide-xs">Knockout</th>
-              <th class="right hide-xs">🏆</th>
-            </tr>
-          </thead>
-          <tbody id="lbPreviewBody"></tbody>
-        </table>
-      </div>
-
-      <div class="lb-preview-footer">
-        <a href="leaderboard.html" class="lb-preview-link">View full standings →</a>
-        <span id="lbPreviewUpdated" class="lb-preview-updated"></span>
-      </div>
-    </div>
-  </div>
+  <!-- Live Leaderboard Preview moved to Standings tab -->
 
 </div>
+</div><!-- /panel-picks -->
 
 <footer class="site-footer">
   <strong>WC2026 Family Bracket</strong> · USA · Canada · Mexico · Final at MetLife Stadium, July 19
 </footer>
 
 <script src="data.js"></script>
+<script>
+  // ── Tab switching (global, not module) ──
+  function switchTab(name) {
+    // If user is already logged in and clicks Picks, go straight to picks.html
+    // (session check handled inline since we can't use module imports here)
+    if (name === 'picks' && sessionStorage.getItem('wc2026_user')) {
+      window.location.href = 'picks.html';
+      return;
+    }
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+    // Update URL hash without scrolling
+    history.replaceState(null, '', '#' + name);
+  }
+
+  // ── Initialize active tab from hash or default to 'picks' ──
+  (function initTab() {
+    const hash = window.location.hash.replace('#', '');
+    const valid = ['rules', 'standings', 'picks'];
+    const tab = valid.includes(hash) ? hash : 'picks';
+    // Use setTimeout to let the DOM settle before switching
+    setTimeout(() => switchTab(tab), 0);
+  })();
+</script>
 <script type="module">
   import {
     getSessionUser,
@@ -627,6 +845,8 @@
 
       // Show the section regardless (even if empty)
       previewWrap.style.display = "flex";
+      const initLoader = document.getElementById("lbPreviewInitLoading");
+      if (initLoader) initLoader.style.display = "none";
 
       const phase1Locked = !!config.phase1Locked;
 
@@ -705,6 +925,10 @@
     } catch (err) {
       console.error("Failed to load leaderboard preview:", err);
       // Don't show the section if it errors — fail silently
+    } finally {
+      // Hide the initial full-panel loader regardless of success/failure
+      const initLoader = document.getElementById("lbPreviewInitLoading");
+      if (initLoader) initLoader.style.display = "none";
     }
   }
 
