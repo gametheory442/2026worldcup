@@ -175,6 +175,12 @@
       flex: 1;
       border-radius: var(--radius);
     }
+    .login-note {
+      margin-top: .55rem;
+      font-size: .8rem;
+      line-height: 1.35;
+      color: var(--muted);
+    }
 
     .users-hint {
       margin-top: 1.25rem;
@@ -714,7 +720,7 @@
             id="username-input"
             class="form-input"
             type="text"
-            placeholder="e.g. Uncle Dave"
+            placeholder="e.g. Uncle John"
             autocomplete="off"
             autocorrect="off"
             autocapitalize="words"
@@ -725,6 +731,9 @@
             Let's Go →
           </button>
         </div>
+        <p class="login-note">
+          We did not want to need to store passwords, so your name will be your login for phase 2 as well.
+        </p>
       </div>
 
       <div id="login-error" class="alert alert-error">
