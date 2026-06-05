@@ -474,6 +474,90 @@
       font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
     }
     .rules-card-body { padding: 1.25rem; }
+    .phase-card .rules-card-body { padding: 1rem; }
+    .phase-header {
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: .7rem 1rem;
+      flex-wrap: wrap;
+    }
+    .phase-title {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+    }
+    .phase-date {
+      font-family: var(--font-body);
+      font-size: .7rem;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0;
+      line-height: 1.2;
+      padding: .24rem .55rem;
+      border: 1px solid rgba(255,255,255,.32);
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      color: rgba(255,255,255,.9);
+    }
+    .phase-summary {
+      margin: 0 0 .85rem;
+      font-size: .86rem;
+      line-height: 1.55;
+      color: var(--text);
+    }
+    .phase-steps {
+      display: grid;
+      gap: .55rem;
+    }
+    .phase-step {
+      display: grid;
+      grid-template-columns: 1.65rem 1fr;
+      gap: .65rem;
+      align-items: start;
+      padding: .7rem .75rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .phase-step-num {
+      display: grid;
+      place-items: center;
+      width: 1.65rem;
+      height: 1.65rem;
+      border-radius: 999px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      color: var(--green);
+      font-family: var(--font-head);
+      font-size: .78rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .phase-step-title {
+      margin: 0 0 .15rem;
+      font-size: .84rem;
+      font-weight: 700;
+      color: var(--dark);
+      line-height: 1.3;
+    }
+    .phase-step-desc {
+      margin: 0;
+      font-size: .82rem;
+      line-height: 1.45;
+      color: var(--text);
+    }
+    .phase-lock {
+      margin-top: .75rem;
+      padding: .65rem .75rem;
+      border: 1px solid var(--gold);
+      border-left-width: 4px;
+      border-radius: var(--radius);
+      background: var(--gold-light);
+      color: var(--dark);
+      font-size: .82rem;
+      line-height: 1.45;
+    }
+    .phase-lock strong { color: var(--gold-dark); }
     .scoring-guide {
       display: grid; grid-template-columns: 1fr 1fr;
       gap: .5rem .75rem; font-size: .83rem;
@@ -505,6 +589,7 @@
     @media (max-width: 480px) {
       .scoring-guide { grid-template-columns: 1fr; }
       .tab-btn { font-size: .72rem; padding: .75rem .25rem; }
+      .phase-date { width: 100%; text-align: center; }
     }
 
     .site-footer {
@@ -550,34 +635,87 @@
     <div class="rules-inner">
 
       <!-- Phase 1 -->
-      <div class="rules-card">
-        <div class="rules-card-header" style="background: var(--green-dark);">
-          🟢 Phase 1 — Group Stage &amp; Champion Pick
-          <span style="margin-left:auto; font-size:.7rem; font-weight:500; opacity:.8; font-family:var(--font-body); text-transform:none; letter-spacing:0;">Opens now · Locks June 11, 3 PM ET</span>
+      <div class="rules-card phase-card">
+        <div class="rules-card-header phase-header" style="background: var(--green-dark);">
+          <span class="phase-title">🟢 Phase 1 — Group Stage &amp; Champion Pick</span>
+          <span class="phase-date">Open now · Locks June 11, 3 PM ET</span>
         </div>
         <div class="rules-card-body">
-          <ul class="rules-list">
-            <li><span class="ri">1️⃣</span> Enter your name on the Picks tab to join.</li>
-            <li><span class="ri">2️⃣</span> <strong>Rank all 12 groups</strong> — drag teams into your predicted finishing order (1st through 4th) for each group. You are <em>not</em> picking individual match results.</li>
-            <li><span class="ri">3️⃣</span> <strong>Pick 8 third-place qualifiers</strong> — the best 8 of the 12 third-place finishers advance. Choose which 8 you think make it.</li>
-            <li><span class="ri">4️⃣</span> <strong>Pick your tournament champion</strong> — one team to lift the trophy on July 19. Worth a big bonus.</li>
-            <li><span class="ri">🔒</span> All Phase 1 picks lock on <strong>June 11 at 3 PM ET</strong> when the first match kicks off. No changes after that.</li>
-          </ul>
+          <p class="phase-summary">
+            Make your pre-tournament predictions before the first match starts.
+          </p>
+          <div class="phase-steps">
+            <div class="phase-step">
+              <span class="phase-step-num">1</span>
+              <div>
+                <p class="phase-step-title">Join with your name</p>
+                <p class="phase-step-desc">Enter your name on the Picks tab to create your entry.</p>
+              </div>
+            </div>
+            <div class="phase-step">
+              <span class="phase-step-num">2</span>
+              <div>
+                <p class="phase-step-title">Rank every group</p>
+                <p class="phase-step-desc">Drag teams into your predicted 1st through 4th order for all 12 groups. You are not picking individual match results.</p>
+              </div>
+            </div>
+            <div class="phase-step">
+              <span class="phase-step-num">3</span>
+              <div>
+                <p class="phase-step-title">Choose 8 third-place qualifiers</p>
+                <p class="phase-step-desc">Pick which 8 of the 12 third-place finishers you think will advance.</p>
+              </div>
+            </div>
+            <div class="phase-step">
+              <span class="phase-step-num">4</span>
+              <div>
+                <p class="phase-step-title">Pick the tournament champion</p>
+                <p class="phase-step-desc">Choose one team to lift the trophy on July 19. This is worth the biggest bonus.</p>
+              </div>
+            </div>
+          </div>
+          <div class="phase-lock">
+            <strong>Lock:</strong> Phase 1 picks close on <strong>June 11 at 3 PM ET</strong>. No changes after kickoff.
+          </div>
         </div>
       </div>
 
       <!-- Phase 2 -->
-      <div class="rules-card">
-        <div class="rules-card-header" style="background: #2563EB;">
-          🔵 Phase 2 — Knockout Stage
-          <span style="margin-left:auto; font-size:.7rem; font-weight:500; opacity:.8; font-family:var(--font-body); text-transform:none; letter-spacing:0;">Opens June 11 · Locks June 28, 3 PM ET</span>
+      <div class="rules-card phase-card">
+        <div class="rules-card-header phase-header" style="background: #2563EB;">
+          <span class="phase-title">🔵 Phase 2 — Knockout Stage</span>
+          <span class="phase-date">Opens June 11 · Locks June 28, 3 PM ET</span>
         </div>
         <div class="rules-card-body">
-          <ul class="rules-list">
-            <li><span class="ri">🏆</span> Once the group stage kicks off, the <strong>Bracket page unlocks</strong> and you can make knockout picks.</li>
-            <li><span class="ri">⚽</span> Pick the winner of every match from the <strong>Round of 32 through the Final</strong> — 32 matches total. No draws in knockout.</li>
-            <li><span class="ri">🔒</span> Knockout picks lock on <strong>June 28 at 3 PM ET</strong> when the Round of 32 begins. You have from June 11–28 to fill them in.</li>
-          </ul>
+          <p class="phase-summary">
+            After Phase 1 locks, fill out the full knockout bracket.
+          </p>
+          <div class="phase-steps">
+            <div class="phase-step">
+              <span class="phase-step-num">1</span>
+              <div>
+                <p class="phase-step-title">Open the Bracket page</p>
+                <p class="phase-step-desc">The Bracket page unlocks once the group stage kicks off.</p>
+              </div>
+            </div>
+            <div class="phase-step">
+              <span class="phase-step-num">2</span>
+              <div>
+                <p class="phase-step-title">Pick every knockout winner</p>
+                <p class="phase-step-desc">Choose winners from the Round of 32 through the Final. There are 32 matches total and no draws.</p>
+              </div>
+            </div>
+            <div class="phase-step">
+              <span class="phase-step-num">3</span>
+              <div>
+                <p class="phase-step-title">Submit before the knockout round starts</p>
+                <p class="phase-step-desc">You have from June 11 through June 28 to fill in your bracket.</p>
+              </div>
+            </div>
+          </div>
+          <div class="phase-lock">
+            <strong>Lock:</strong> Phase 2 picks close on <strong>June 28 at 3 PM ET</strong>, when the Round of 32 begins.
+          </div>
         </div>
       </div>
 
