@@ -350,6 +350,7 @@ exports.syncResultsHttp = onRequest(
     secrets: [API_FOOTBALL_KEY],
     memory: "256MiB",
     timeoutSeconds: 60,
+    invoker: "public",
   },
   (req, res) => {
     corsHandler(req, res, async () => {
