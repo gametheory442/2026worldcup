@@ -395,6 +395,17 @@
         <div class="alert alert-info" style="margin-bottom:1rem;">
           ℹ️ Enter the winning team name exactly as it appears in data.js. No draws in knockout.
         </div>
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-title">Sync from API</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+            <div>
+              <div id="apiSyncStatus" style="font-size:.85rem;color:var(--muted);">Last sync: never</div>
+              <div style="font-size:.75rem;color:var(--muted);margin-top:.25rem;">Pulls all finished matches from API-Football. Cooldown: 15 min.</div>
+            </div>
+            <button class="btn btn-outline" id="apiSyncBtn">Sync Results from API</button>
+          </div>
+          <div id="apiSyncError" class="alert alert-error" style="display:none;margin-top:.85rem;"></div>
+        </div>
         <div id="knockoutResultsContainer">
           <div class="loading-state"><div class="spinner"></div> Loading matches…</div>
         </div>
@@ -431,6 +442,7 @@
       getAllUsers,
       getAllPicks,
     } from "./firebase.js";
+    import { SYNC_COOLDOWN_MS, syncResults } from "./js/api-football.js";
 
     /* global TOURNAMENT_DATA, getTeamFlag, getGroupTeams */
 
@@ -499,9 +511,75 @@
       return d.toLocaleDateString("en-US", { month:"short", day:"numeric" });
     }
 
+    function fmtTime(timestamp) {
+      return new Date(timestamp).toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit" });
+    }
+
     function initials(name) {
       return name.split(/\s+/).slice(0,2).map(w => w[0]).join("").toUpperCase();
     }
+
+    // ─────────────────────────────────────
+    // API-FOOTBALL SYNC
+    // ─────────────────────────────────────
+    const apiSyncBtn    = document.getElementById("apiSyncBtn");
+    const apiSyncStatus = document.getElementById("apiSyncStatus");
+    const apiSyncError  = document.getElementById("apiSyncError");
+
+    function renderApiSyncStatus() {
+      const lastSync = Number(localStorage.getItem("wc2026_lastSync") || 0);
+      apiSyncStatus.textContent = lastSync ? `Last sync: ${fmtTime(lastSync)}` : "Last sync: never";
+    }
+
+    apiSyncBtn.addEventListener("click", async () => {
+      const lastSync = Number(localStorage.getItem("wc2026_lastSync") || 0);
+      const now = Date.now();
+      const remaining = SYNC_COOLDOWN_MS - (now - lastSync);
+
+      apiSyncError.style.display = "none";
+      apiSyncError.textContent = "";
+
+      if (lastSync && remaining > 0) {
+        const minutes = Math.ceil(remaining / 60000);
+        apiSyncError.textContent = `Please wait ${minutes} more minute${minutes === 1 ? "" : "s"} before syncing again.`;
+        apiSyncError.style.display = "block";
+        return;
+      }
+
+      apiSyncBtn.disabled = true;
+      apiSyncBtn.textContent = "Syncing...";
+
+      try {
+        const knownMatches = [
+          ...TOURNAMENT_DATA.groupMatches,
+          ...TOURNAMENT_DATA.knockoutMatches
+        ];
+        const result = await syncResults(saveResult, knownMatches);
+        const syncedAt = Date.now();
+
+        localStorage.setItem("wc2026_lastSync", String(syncedAt));
+        apiSyncStatus.textContent = `Last sync: ${result.synced} new results, ${result.skipped} skipped — ${fmtTime(syncedAt)}`;
+
+        allKoResults = await getAllResults();
+        updateStats();
+        renderSummary();
+        renderKnockoutResults();
+
+        if (result.errors.length) {
+          apiSyncError.textContent = `Sync completed with ${result.errors.length} error${result.errors.length === 1 ? "" : "s"}: ${result.errors.join("; ")}`;
+          apiSyncError.style.display = "block";
+        } else {
+          toast(`API sync complete: ${result.synced} results, ${result.skipped} skipped.`, "success");
+        }
+      } catch (err) {
+        console.error(err);
+        apiSyncError.textContent = err?.message || "API sync failed. Check connection.";
+        apiSyncError.style.display = "block";
+      } finally {
+        apiSyncBtn.disabled = false;
+        apiSyncBtn.textContent = "Sync Results from API";
+      }
+    });
 
     // ─────────────────────────────────────
     // TABS
@@ -1006,6 +1084,7 @@
         renderThirdQualifiersPanel();
         renderKnockoutResults();
         renderPlayers();
+        renderApiSyncStatus();
 
       } catch (err) {
         console.error("Admin init error:", err);
