@@ -1,6 +1,5 @@
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onRequest } = require("firebase-functions/v2/https");
-const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const fetch = require("node-fetch");
 const cors = require("cors");
@@ -8,60 +7,79 @@ const cors = require("cors");
 admin.initializeApp();
 const db = admin.firestore();
 
-const API_FOOTBALL_KEY = defineSecret("API_FOOTBALL_KEY");
-
-const BASE_URL = "https://v3.football.api-sports.io";
-const LEAGUE = 1;
-const SEASON = 2026;
 const ADMIN_PIN = "lucasiscool";
 
-// ── Team name mapping (API-Football name → internal key) ──
+// ESPN public API — no auth required
+const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world";
+const ESPN_STANDINGS = "https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings";
 
-const API_TEAM_NAME_MAP = {
-  "Mexico": "Mexico", "South Africa": "South Africa", "South Korea": "South Korea",
-  "Canada": "Canada", "Qatar": "Qatar", "Switzerland": "Switzerland",
-  "Brazil": "Brazil", "Morocco": "Morocco", "Haiti": "Haiti", "Scotland": "Scotland",
-  "United States": "United States", "Paraguay": "Paraguay", "Australia": "Australia",
-  "Germany": "Germany", "Ivory Coast": "Ivory Coast", "Ecuador": "Ecuador",
-  "Curacao": "Curaçao", "Curaçao": "Curaçao",
-  "Netherlands": "Netherlands", "Japan": "Japan", "Tunisia": "Tunisia",
-  "Belgium": "Belgium", "Egypt": "Egypt", "Iran": "Iran", "New Zealand": "New Zealand",
-  "Spain": "Spain", "Saudi Arabia": "Saudi Arabia", "Uruguay": "Uruguay", "Cape Verde": "Cape Verde",
-  "France": "France", "Senegal": "Senegal", "Norway": "Norway",
-  "Argentina": "Argentina", "Algeria": "Algeria", "Austria": "Austria", "Jordan": "Jordan",
-  "Portugal": "Portugal", "Uzbekistan": "Uzbekistan", "Colombia": "Colombia",
-  "England": "England", "Croatia": "Croatia", "Ghana": "Ghana", "Panama": "Panama",
-  "Italy": "Italy",
-  "Bosnia Herzegovina": "Bosnia & Herzegovina", "Bosnia & Herzegovina": "Bosnia & Herzegovina",
-  "Bosnia and Herzegovina": "Bosnia & Herzegovina",
-  "Sweden": "Sweden", "Poland": "Poland",
-  "Turkey": "Türkiye", "Türkiye": "Türkiye",
-  "Kosovo": "Kosovo",
-  "Czech Republic": "Czechia", "Czechia": "Czechia",
-  "Denmark": "Denmark", "Jamaica": "Jamaica",
-  "DR Congo": "DR Congo", "Congo DR": "DR Congo",
-  "Bolivia": "Bolivia", "Iraq": "Iraq",
-};
+// ── Team name mapping (ESPN display name → internal key) ──
 
-// ── Internal key mapping for match lookup (mirrors api-football.js GROUP_MATCHES) ──
-
-const TEAM_KEY_MAP = {
-  "Mexico": "mexico", "South Africa": "south-africa", "South Korea": "south-korea",
-  "Canada": "canada", "Qatar": "qatar", "Switzerland": "switzerland",
-  "Brazil": "brazil", "Morocco": "morocco", "Haiti": "haiti", "Scotland": "scotland",
-  "United States": "usa", "Paraguay": "paraguay", "Australia": "australia",
-  "Germany": "germany", "Ivory Coast": "ivory-coast", "Ecuador": "ecuador",
+const ESPN_TEAM_NAME_MAP = {
+  "Mexico": "mexico",
+  "South Africa": "south-africa",
+  "South Korea": "south-korea",
+  "Korea Republic": "south-korea",
+  "Canada": "canada",
+  "Qatar": "qatar",
+  "Switzerland": "switzerland",
+  "Brazil": "brazil",
+  "Morocco": "morocco",
+  "Haiti": "haiti",
+  "Scotland": "scotland",
+  "United States": "usa",
+  "USA": "usa",
+  "Paraguay": "paraguay",
+  "Australia": "australia",
+  "Germany": "germany",
+  "Ivory Coast": "ivory-coast",
+  "Côte d'Ivoire": "ivory-coast",
+  "Cote d'Ivoire": "ivory-coast",
+  "Ecuador": "ecuador",
   "Curaçao": "curacao",
-  "Netherlands": "netherlands", "Japan": "japan", "Tunisia": "tunisia",
-  "Belgium": "belgium", "Egypt": "egypt", "Iran": "iran", "New Zealand": "new-zealand",
-  "Spain": "spain", "Saudi Arabia": "saudi-arabia", "Uruguay": "uruguay", "Cape Verde": "cape-verde",
-  "France": "france", "Senegal": "senegal", "Norway": "norway",
-  "Argentina": "argentina", "Algeria": "algeria", "Austria": "austria", "Jordan": "jordan",
-  "Portugal": "portugal", "Uzbekistan": "uzbekistan", "Colombia": "colombia",
-  "England": "england", "Croatia": "croatia", "Ghana": "ghana", "Panama": "panama",
-  "Bosnia & Herzegovina": "bosnia", "Sweden": "sweden",
-  "Türkiye": "turkey", "Czechia": "czechia",
-  "DR Congo": "dr-congo", "Iraq": "iraq",
+  "Curacao": "curacao",
+  "Netherlands": "netherlands",
+  "Japan": "japan",
+  "Tunisia": "tunisia",
+  "Belgium": "belgium",
+  "Egypt": "egypt",
+  "Iran": "iran",
+  "New Zealand": "new-zealand",
+  "Spain": "spain",
+  "Saudi Arabia": "saudi-arabia",
+  "Uruguay": "uruguay",
+  "Cape Verde": "cape-verde",
+  "France": "france",
+  "Senegal": "senegal",
+  "Norway": "norway",
+  "Argentina": "argentina",
+  "Algeria": "algeria",
+  "Austria": "austria",
+  "Jordan": "jordan",
+  "Portugal": "portugal",
+  "Uzbekistan": "uzbekistan",
+  "Colombia": "colombia",
+  "England": "england",
+  "Croatia": "croatia",
+  "Ghana": "ghana",
+  "Panama": "panama",
+  "Bosnia and Herzegovina": "bosnia",
+  "Bosnia & Herzegovina": "bosnia",
+  "Bosnia-Herzegovina": "bosnia",
+  "Sweden": "sweden",
+  "Turkey": "turkey",
+  "Türkiye": "turkey",
+  "Czech Republic": "czechia",
+  "Czechia": "czechia",
+  "DR Congo": "dr-congo",
+  "Congo DR": "dr-congo",
+  "Democratic Republic of Congo": "dr-congo",
+  "Iraq": "iraq",
+  "Poland": "poland",
+  "Denmark": "denmark",
+  "Jamaica": "jamaica",
+  "Kosovo": "kosovo",
+  "Bolivia": "bolivia",
 };
 
 const GROUP_MATCHES = {
@@ -138,98 +156,147 @@ function findGroupMatchId(teamKey1, teamKey2) {
   return MATCH_LOOKUP[key] || null;
 }
 
-function findKnockoutMatchId(fixture) {
-  const date = fixture?.fixture?.date?.slice(0, 10) || "";
-  const homeName = fixture?.teams?.home?.name || "";
-  const awayName = fixture?.teams?.away?.name || "";
-  const sameDateMatches = KNOCKOUT_MATCHES.filter(m => m.date === date);
-
+function findKnockoutMatchId(dateStr) {
+  const sameDateMatches = KNOCKOUT_MATCHES.filter(m => m.date === dateStr);
   if (sameDateMatches.length === 1) return sameDateMatches[0].id;
+  return null;
+}
 
-  const normalizedNames = [homeName, awayName].map(n => n.toLowerCase());
-  const match = sameDateMatches.find(candidate => {
-    const id = candidate.matchNum;
-    return normalizedNames.every(name =>
-      name.length > 0 && id > 0
-    );
+function resolveTeamKey(espnName) {
+  return ESPN_TEAM_NAME_MAP[espnName] || null;
+}
+
+// ── ESPN fetch helpers ──
+
+function toDateString(date) {
+  return date.toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+function toESPNDate(date) {
+  return date.toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
+}
+
+async function fetchESPNEvents(date) {
+  const url = `${ESPN_BASE}/scoreboard?dates=${toESPNDate(date)}&limit=50`;
+  const res = await fetch(url, { headers: { "Accept": "application/json" } });
+  if (!res.ok) throw new Error(`ESPN scoreboard request failed: ${res.status} for date ${toDateString(date)}`);
+  const data = await res.json();
+  return data.events || [];
+}
+
+async function fetchAllESPNEvents() {
+  // Fetch a rolling window: yesterday, today, and tomorrow (catches late-finishing games)
+  const now = new Date();
+  const dates = [-1, 0, 1].map(offset => {
+    const d = new Date(now);
+    d.setDate(d.getDate() + offset);
+    return d;
   });
 
-  return match ? match.id : null;
-}
-
-function resolveTeamName(apiName) {
-  return API_TEAM_NAME_MAP[apiName] || null;
-}
-
-function getTeamKey(teamName) {
-  return TEAM_KEY_MAP[teamName] || null;
-}
-
-function determineWinner(fixture) {
-  const homeName = resolveTeamName(fixture?.teams?.home?.name);
-  const awayName = resolveTeamName(fixture?.teams?.away?.name);
-  const goals = fixture?.goals || {};
-  const score = fixture?.score || {};
-
-  if (score.penalty?.home != null) {
-    return score.penalty.home > score.penalty.away ? homeName : awayName;
+  const results = await Promise.allSettled(dates.map(d => fetchESPNEvents(d)));
+  const events = [];
+  for (const result of results) {
+    if (result.status === "fulfilled") events.push(...result.value);
   }
-  if (score.extratime?.home != null) {
-    return goals.home > goals.away ? homeName : awayName;
-  }
-  if (goals.home === goals.away) return "draw";
-  return goals.home > goals.away ? homeName : awayName;
+  return events;
 }
 
-// ── API fetch helpers ──
-
-async function fetchFixtures(apiKey) {
-  const url = `${BASE_URL}/fixtures?league=${LEAGUE}&season=${SEASON}`;
-  const res = await fetch(url, { headers: { "x-apisports-key": apiKey } });
-  if (!res.ok) throw new Error(`API-Football fixtures request failed: ${res.status}`);
-  const data = await res.json();
-  if (data.errors && typeof data.errors === "object" && Object.keys(data.errors).length) {
-    throw new Error(`API-Football error: ${Object.values(data.errors).join(", ")}`);
-  }
-  return data.response || [];
+async function fetchESPNStandings() {
+  const url = `${ESPN_STANDINGS}?limit=50`;
+  const res = await fetch(url, { headers: { "Accept": "application/json" } });
+  if (!res.ok) throw new Error(`ESPN standings request failed: ${res.status}`);
+  return res.json();
 }
 
-async function fetchStandings(apiKey) {
-  const url = `${BASE_URL}/standings?league=${LEAGUE}&season=${SEASON}`;
-  const res = await fetch(url, { headers: { "x-apisports-key": apiKey } });
-  if (!res.ok) throw new Error(`API-Football standings request failed: ${res.status}`);
-  const data = await res.json();
-  if (data.errors && typeof data.errors === "object" && Object.keys(data.errors).length) {
-    throw new Error(`API-Football error: ${Object.values(data.errors).join(", ")}`);
+// ── Parse ESPN event into normalized match data ──
+
+function parseESPNEvent(event) {
+  const status = event.status?.type;
+  if (!status?.completed) return null;
+
+  const competition = event.competitions?.[0];
+  if (!competition) return null;
+
+  const home = competition.competitors?.find(c => c.homeAway === "home");
+  const away = competition.competitors?.find(c => c.homeAway === "away");
+  if (!home || !away) return null;
+
+  const homeName = home.team?.displayName || "";
+  const awayName = away.team?.displayName || "";
+  const homeGoals = parseInt(home.score, 10);
+  const awayGoals = parseInt(away.score, 10);
+
+  // Detect penalty shootout from notes or status detail
+  const notes = (competition.notes || []).map(n => (n.headline || "").toLowerCase());
+  const statusDetail = (status.detail || "").toLowerCase();
+  const isPenalty = notes.some(n => n.includes("penalty") || n.includes("shootout"))
+    || statusDetail.includes("penalty") || statusDetail.includes("shootout")
+    || status.name === "STATUS_FINAL_PEN";
+  const isAET = notes.some(n => n.includes("extra time") || n.includes("aet"))
+    || statusDetail.includes("extra time") || statusDetail.includes("aet")
+    || status.name === "STATUS_FINAL_AET";
+
+  // For penalties: ESPN shows the score after 90/120 min (which may be tied),
+  // and the winner is indicated by the "winner" flag on the competitor
+  let winner;
+  if (isPenalty) {
+    const winnerComp = competition.competitors?.find(c => c.winner === true);
+    if (winnerComp) {
+      winner = resolveTeamKey(winnerComp.team?.displayName);
+    } else {
+      // Fallback: higher score wins (shouldn't happen for ties-then-penalty)
+      winner = homeGoals > awayGoals
+        ? resolveTeamKey(homeName)
+        : resolveTeamKey(awayName);
+    }
+  } else if (homeGoals === awayGoals) {
+    winner = "draw";
+  } else {
+    winner = homeGoals > awayGoals ? resolveTeamKey(homeName) : resolveTeamKey(awayName);
   }
-  return data.response || [];
+
+  const matchDate = (event.date || "").slice(0, 10);
+
+  return {
+    homeName,
+    awayName,
+    homeKey: resolveTeamKey(homeName),
+    awayKey: resolveTeamKey(awayName),
+    homeGoals: isNaN(homeGoals) ? null : homeGoals,
+    awayGoals: isNaN(awayGoals) ? null : awayGoals,
+    winner,
+    matchDate,
+    isPenalty,
+    isAET,
+  };
 }
 
 // ── Core sync logic ──
 
-async function doSyncResults(apiKey) {
+async function doSyncResults() {
   const summary = { synced: 0, skipped: 0, errors: [] };
-  const fixtures = await fetchFixtures(apiKey);
-  const finishedStatuses = new Set(["FT", "AET", "PEN"]);
-  const finished = fixtures.filter(f => finishedStatuses.has(f?.fixture?.status?.short));
+  const events = await fetchAllESPNEvents();
 
   const batch = db.batch();
   let batchCount = 0;
 
-  for (const fixture of finished) {
+  for (const event of events) {
     try {
-      const homeName = resolveTeamName(fixture?.teams?.home?.name);
-      const awayName = resolveTeamName(fixture?.teams?.away?.name);
-
-      if (!homeName || !awayName) {
+      const match = parseESPNEvent(event);
+      if (!match) {
         summary.skipped += 1;
         continue;
       }
 
-      const homeKey = getTeamKey(homeName);
-      const awayKey = getTeamKey(awayName);
+      const { homeName, awayName, homeKey, awayKey, homeGoals, awayGoals, winner, matchDate, isPenalty, isAET } = match;
 
       if (!homeKey || !awayKey) {
+        console.warn(`Unmapped ESPN team: "${homeName}" or "${awayName}"`);
+        summary.skipped += 1;
+        continue;
+      }
+
+      if (!winner) {
         summary.skipped += 1;
         continue;
       }
@@ -242,7 +309,7 @@ async function doSyncResults(apiKey) {
         matchId = `match_${rawGroupId}`;
         phase = "group";
       } else {
-        matchId = findKnockoutMatchId(fixture);
+        matchId = findKnockoutMatchId(matchDate);
         phase = "knockout";
       }
 
@@ -251,18 +318,17 @@ async function doSyncResults(apiKey) {
         continue;
       }
 
-      const winner = determineWinner(fixture);
-      const goals = fixture?.goals || {};
-
       const docData = {
         winner,
         phase,
         homeTeam: homeName,
         awayTeam: awayName,
-        homeGoals: goals.home ?? null,
-        awayGoals: goals.away ?? null,
+        homeGoals: homeGoals ?? null,
+        awayGoals: awayGoals ?? null,
+        isPenalty: isPenalty || false,
+        isAET: isAET || false,
         enteredAt: admin.firestore.FieldValue.serverTimestamp(),
-        source: "api-football",
+        source: "espn",
       };
 
       batch.set(db.collection("results").doc(matchId), docData, { merge: true });
@@ -282,38 +348,43 @@ async function doSyncResults(apiKey) {
   return summary;
 }
 
-async function doSyncStandings(apiKey) {
-  const response = await fetchStandings(apiKey);
-  if (!response.length) return { updated: 0 };
+async function doSyncStandings() {
+  const data = await fetchESPNStandings();
+  const children = data.children || [];
+  if (!children.length) return { updated: 0 };
 
-  const league = response[0]?.league;
-  if (!league?.standings) return { updated: 0 };
-
-  const GROUP_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
   const batch = db.batch();
   let updated = 0;
 
-  for (let i = 0; i < league.standings.length && i < 12; i++) {
-    const groupTeams = league.standings[i];
-    if (!groupTeams || !groupTeams.length) continue;
+  for (const group of children) {
+    const groupName = group.name || ""; // e.g. "Group A"
+    const letter = groupName.replace("Group ", "").trim();
+    if (!letter || letter.length !== 1) continue;
 
-    const groupLetter = GROUP_LETTERS[i];
-    const teams = groupTeams.map(entry => ({
-      rank: entry.rank,
-      team: resolveTeamName(entry.team?.name) || entry.team?.name,
-      played: entry.all?.played ?? 0,
-      win: entry.all?.win ?? 0,
-      draw: entry.all?.draw ?? 0,
-      loss: entry.all?.lose ?? 0,
-      goalsFor: entry.all?.goals?.for ?? 0,
-      goalsAgainst: entry.all?.goals?.against ?? 0,
-      goalDiff: entry.goalsDiff ?? 0,
-      points: entry.points ?? 0,
-    }));
+    const standings = group.standings?.entries || [];
+    const teams = standings.map((entry, idx) => {
+      const teamName = entry.team?.displayName || "";
+      const stats = {};
+      for (const s of entry.stats || []) {
+        stats[s.name] = s.value;
+      }
+      return {
+        rank: idx + 1,
+        team: teamName,
+        played: stats["gamesPlayed"] ?? 0,
+        win: stats["wins"] ?? 0,
+        draw: stats["ties"] ?? 0,
+        loss: stats["losses"] ?? 0,
+        goalsFor: stats["pointsFor"] ?? 0,
+        goalsAgainst: stats["pointsAgainst"] ?? 0,
+        goalDiff: stats["pointDifferential"] ?? 0,
+        points: stats["points"] ?? 0,
+      };
+    });
 
     batch.set(
-      db.collection("fifa_standings").doc(`group_${groupLetter}`),
-      { groupId: groupLetter, teams, updatedAt: admin.firestore.FieldValue.serverTimestamp() },
+      db.collection("fifa_standings").doc(`group_${letter}`),
+      { groupId: letter, teams, updatedAt: admin.firestore.FieldValue.serverTimestamp() },
       { merge: true }
     );
     updated++;
@@ -329,14 +400,12 @@ exports.syncResultsScheduled = onSchedule(
   {
     schedule: "*/10 9-23 * * *",
     timeZone: "America/Los_Angeles",
-    secrets: [API_FOOTBALL_KEY],
     memory: "256MiB",
     timeoutSeconds: 60,
   },
   async () => {
-    const apiKey = API_FOOTBALL_KEY.value();
-    const resultsSummary = await doSyncResults(apiKey);
-    const standingsSummary = await doSyncStandings(apiKey);
+    const resultsSummary = await doSyncResults();
+    const standingsSummary = await doSyncStandings();
     console.log("Scheduled sync complete:", { results: resultsSummary, standings: standingsSummary });
   }
 );
@@ -347,7 +416,6 @@ const corsHandler = cors({ origin: true });
 
 exports.syncResultsHttp = onRequest(
   {
-    secrets: [API_FOOTBALL_KEY],
     memory: "256MiB",
     timeoutSeconds: 60,
     invoker: "public",
@@ -366,9 +434,8 @@ exports.syncResultsHttp = onRequest(
       }
 
       try {
-        const apiKey = API_FOOTBALL_KEY.value();
-        const resultsSummary = await doSyncResults(apiKey);
-        const standingsSummary = await doSyncStandings(apiKey);
+        const resultsSummary = await doSyncResults();
+        const standingsSummary = await doSyncStandings();
         res.json({
           success: true,
           results: resultsSummary,
