@@ -442,7 +442,8 @@
       getAllUsers,
       getAllPicks,
     } from "./firebase.js";
-    import { SYNC_COOLDOWN_MS, syncResults } from "./js/api-football.js";
+    const SYNC_COOLDOWN_MS = 900000;
+    const SYNC_FUNCTION_URL = "https://us-central1-familybracket-9ab1c.cloudfunctions.net/syncResultsHttp";
 
     /* global TOURNAMENT_DATA, getTeamFlag, getGroupTeams */
 
@@ -550,11 +551,19 @@
       apiSyncBtn.textContent = "Syncing...";
 
       try {
-        const knownMatches = [
-          ...TOURNAMENT_DATA.groupMatches,
-          ...TOURNAMENT_DATA.knockoutMatches
-        ];
-        const result = await syncResults(saveResult, knownMatches);
+        const res = await fetch(SYNC_FUNCTION_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ adminToken: "lucasiscool" }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Server returned ${res.status}`);
+        }
+
+        const data = await res.json();
+        const result = data.results || { synced: 0, skipped: 0, errors: [] };
         const syncedAt = Date.now();
 
         localStorage.setItem("wc2026_lastSync", String(syncedAt));
@@ -565,7 +574,7 @@
         renderSummary();
         renderKnockoutResults();
 
-        if (result.errors.length) {
+        if (result.errors && result.errors.length) {
           apiSyncError.textContent = `Sync completed with ${result.errors.length} error${result.errors.length === 1 ? "" : "s"}: ${result.errors.join("; ")}`;
           apiSyncError.style.display = "block";
         } else {

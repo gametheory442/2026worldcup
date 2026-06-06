@@ -197,6 +197,20 @@ export async function getAllResults() {
 }
 
 // -----------------------------------------------------------
+// FIFA GROUP STANDINGS (cached from API-Football)
+// -----------------------------------------------------------
+
+export async function getAllFifaStandings() {
+  const groups = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+  const result = {};
+  await Promise.all(groups.map(async g => {
+    const snap = await getDoc(doc(db, "fifa_standings", `group_${g}`));
+    if (snap.exists()) result[g] = snap.data();
+  }));
+  return result;
+}
+
+// -----------------------------------------------------------
 // TOURNAMENT CONFIG
 // -----------------------------------------------------------
 

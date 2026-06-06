@@ -108,6 +108,79 @@
     .refresh-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse 2s ease-in-out infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.7); } }
 
+    /* ── Tab bar ── */
+    .lb-tab-bar {
+      display: flex; gap: 0; margin-bottom: 1.25rem;
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+    }
+    .lb-tab {
+      flex: 1; padding: .7rem 1rem; border: none; background: none;
+      font-family: var(--font-head); font-size: .78rem; font-weight: 600;
+      letter-spacing: .06em; text-transform: uppercase;
+      color: var(--muted); cursor: pointer; transition: all .15s;
+      border-bottom: 3px solid transparent;
+    }
+    .lb-tab:hover { color: var(--green); background: var(--bg); }
+    .lb-tab.active { color: var(--green); border-bottom-color: var(--green); background: var(--green-light); }
+
+    /* ── Group tables ── */
+    .groups-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;
+    }
+    .group-table-card {
+      background: var(--white); border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+    }
+    .group-table-header {
+      display: flex; align-items: center; gap: .6rem;
+      padding: .6rem 1rem;
+      background: linear-gradient(135deg, var(--green-dark), var(--green));
+      color: #fff; font-family: var(--font-head); font-size: .85rem;
+      font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    }
+    .group-table-header .group-letter {
+      font-size: 1.3rem; min-width: 24px; text-align: center;
+    }
+    .gt { width: 100%; border-collapse: collapse; font-size: .78rem; }
+    .gt thead th {
+      font-family: var(--font-head); font-size: .6rem; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+      padding: .45rem .4rem; border-bottom: 2px solid var(--border);
+      text-align: center; background: var(--bg); white-space: nowrap;
+    }
+    .gt thead th.team-col { text-align: left; padding-left: .75rem; }
+    .gt tbody tr { border-bottom: 1px solid var(--border); }
+    .gt tbody tr:last-child { border-bottom: none; }
+    .gt tbody td {
+      padding: .5rem .4rem; text-align: center; vertical-align: middle;
+    }
+    .gt tbody td.team-cell {
+      text-align: left; padding-left: .75rem; font-weight: 600;
+      color: var(--dark); white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; max-width: 140px;
+    }
+    .gt tbody td.pts-cell {
+      font-family: var(--font-head); font-weight: 700; color: var(--green);
+    }
+    .gt tbody tr:nth-child(-n+2) { background: #F0FDF4; }
+    .gt .rank-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 20px; height: 20px; border-radius: 50%; font-weight: 700;
+      font-size: .7rem;
+    }
+    .gt .rank-num.q { background: var(--green-light); color: var(--green); border: 1px solid var(--green-mid); }
+    .gt .rank-num.e { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+    .groups-placeholder {
+      text-align: center; padding: 4rem 1rem; color: var(--muted);
+    }
+    .groups-placeholder-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+
+    @media (max-width: 700px) {
+      .groups-grid { grid-template-columns: 1fr; }
+      .gt .hide-mobile-gt { display: none; }
+    }
+
     .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .75rem; padding: 4rem 1rem; color: var(--muted); font-size: .9rem; }
     .spinner { width: 22px; height: 22px; border: 2.5px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin .65s linear infinite; flex-shrink: 0; }
     .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
@@ -175,6 +248,15 @@
       <div class="page-title">🏆 Leaderboard</div>
       <div class="page-subtitle">Live standings · updates every 60 seconds</div>
     </div>
+
+    <!-- Tab bar -->
+    <div class="lb-tab-bar">
+      <button class="lb-tab active" data-tab="standings" onclick="switchLbTab('standings')">🏆 Leaderboard</button>
+      <button class="lb-tab" data-tab="groups" onclick="switchLbTab('groups')">⚽ Groups</button>
+    </div>
+
+    <!-- ═══ STANDINGS TAB ═══ -->
+    <div id="standingsContent">
 
     <!-- Pre-launch notice (shown only when phase1 not yet locked) -->
     <div id="pickHiddenNotice" class="pick-hidden-notice" style="display:none">
@@ -263,6 +345,20 @@
 
     <div class="last-updated" id="lastUpdated"></div>
 
+    </div><!-- /standingsContent -->
+
+    <!-- ═══ GROUPS TAB ═══ -->
+    <div id="groupsContent" style="display:none">
+      <div id="groupsGrid" class="groups-grid">
+        <div class="groups-placeholder" style="grid-column:1/-1;">
+          <div class="groups-placeholder-icon">⚽</div>
+          <div style="font-weight:600;margin-bottom:.35rem;">Group Standings</div>
+          <div style="font-size:.83rem;">Loading group data…</div>
+        </div>
+      </div>
+      <div class="last-updated" id="groupsLastUpdated"></div>
+    </div>
+
   </main>
 
   <div class="loading-state" id="globalLoading" style="min-height:60vh;">
@@ -282,9 +378,125 @@
       getAllUsers,
       getTournamentConfig,
       calculateScores,
+      getAllFifaStandings,
     } from "./firebase.js";
 
-    /* global TOURNAMENT_DATA */
+    /* global TOURNAMENT_DATA, getTeamFlag, shortName */
+
+    const GROUPS = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+    let groupsLoaded = false;
+    let cachedStandings = null;
+
+    window.switchLbTab = function(tab) {
+      document.querySelectorAll(".lb-tab").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+      document.getElementById("standingsContent").style.display = tab === "standings" ? "" : "none";
+      document.getElementById("groupsContent").style.display = tab === "groups" ? "" : "none";
+      if (tab === "groups" && !groupsLoaded) loadGroups();
+    };
+
+    async function loadGroups() {
+      try {
+        cachedStandings = await getAllFifaStandings();
+        renderGroups(cachedStandings);
+        groupsLoaded = true;
+      } catch (err) {
+        console.error("Failed to load group standings:", err);
+        document.getElementById("groupsGrid").innerHTML = `
+          <div class="groups-placeholder" style="grid-column:1/-1;">
+            <div class="groups-placeholder-icon">⚠️</div>
+            <div style="font-weight:600;margin-bottom:.35rem;">Failed to load</div>
+            <div style="font-size:.83rem;">Check your connection and try again.</div>
+          </div>`;
+      }
+    }
+
+    function renderGroups(standings) {
+      const grid = document.getElementById("groupsGrid");
+
+      if (!standings || Object.keys(standings).length === 0) {
+        grid.innerHTML = GROUPS.map(g => renderEmptyGroupCard(g)).join("");
+        document.getElementById("groupsLastUpdated").textContent = "Tournament begins June 11 — standings will update live once matches start.";
+        return;
+      }
+
+      grid.innerHTML = GROUPS.map(g => {
+        const data = standings[g];
+        if (!data || !data.teams || !data.teams.length) return renderEmptyGroupCard(g);
+        return renderGroupCard(g, data.teams);
+      }).join("");
+
+      const updatedAt = Object.values(standings).find(s => s.updatedAt)?.updatedAt;
+      const updEl = document.getElementById("groupsLastUpdated");
+      if (updEl && updatedAt) {
+        const d = updatedAt.toDate ? updatedAt.toDate() : new Date(updatedAt);
+        updEl.textContent = `Standings last synced: ${fmtTime(d)}`;
+      }
+    }
+
+    function renderGroupCard(g, teams) {
+      const groupTeams = TOURNAMENT_DATA.groups[g]?.teams || [];
+      const rows = teams.map((t, i) => {
+        const flag = getTeamFlag(t.team) || "🏳️";
+        const name = shortName(t.team) || t.team;
+        const rankCls = i < 2 ? "q" : "e";
+        return `<tr>
+          <td><span class="rank-num ${rankCls}">${t.rank || i + 1}</span></td>
+          <td class="team-cell">${flag} ${name}</td>
+          <td>${t.played}</td>
+          <td>${t.win}</td>
+          <td>${t.draw}</td>
+          <td>${t.loss}</td>
+          <td class="hide-mobile-gt">${t.goalsFor}</td>
+          <td class="hide-mobile-gt">${t.goalsAgainst}</td>
+          <td>${t.goalDiff > 0 ? "+" + t.goalDiff : t.goalDiff}</td>
+          <td class="pts-cell">${t.points}</td>
+        </tr>`;
+      }).join("");
+
+      return `<div class="group-table-card">
+        <div class="group-table-header"><span class="group-letter">${g}</span> Group ${g}</div>
+        <table class="gt">
+          <thead><tr>
+            <th style="width:30px">#</th>
+            <th class="team-col">Team</th>
+            <th>MP</th><th>W</th><th>D</th><th>L</th>
+            <th class="hide-mobile-gt">GF</th><th class="hide-mobile-gt">GA</th>
+            <th>GD</th><th>Pts</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    }
+
+    function renderEmptyGroupCard(g) {
+      const teams = TOURNAMENT_DATA.groups[g]?.teams || [];
+      const rows = teams.map((t, i) => {
+        const flag = getTeamFlag(t) || "🏳️";
+        const name = shortName(t) || t;
+        const rankCls = i < 2 ? "q" : "e";
+        return `<tr>
+          <td><span class="rank-num ${rankCls}">${i + 1}</span></td>
+          <td class="team-cell">${flag} ${name}</td>
+          <td>0</td><td>0</td><td>0</td><td>0</td>
+          <td class="hide-mobile-gt">0</td><td class="hide-mobile-gt">0</td>
+          <td>0</td><td class="pts-cell">0</td>
+        </tr>`;
+      }).join("");
+
+      return `<div class="group-table-card">
+        <div class="group-table-header"><span class="group-letter">${g}</span> Group ${g}</div>
+        <table class="gt">
+          <thead><tr>
+            <th style="width:30px">#</th>
+            <th class="team-col">Team</th>
+            <th>MP</th><th>W</th><th>D</th><th>L</th>
+            <th class="hide-mobile-gt">GF</th><th class="hide-mobile-gt">GA</th>
+            <th>GD</th><th>Pts</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    }
 
     let currentUser    = null;
     let countdown      = 60;
