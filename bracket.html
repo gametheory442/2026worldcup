@@ -325,15 +325,15 @@
     <div class="card">
       <div class="card-title">📋 What You'll Pick in Phase 2</div>
       <div class="ko-scoring-grid">
-        <div class="ko-score-item"><span>Round of 32 winner (×16)</span><span class="ko-pts">+3</span></div>
-        <div class="ko-score-item"><span>Round of 16 winner (×8)</span><span class="ko-pts">+5</span></div>
-        <div class="ko-score-item"><span>Quarterfinal winner (×4)</span><span class="ko-pts">+7</span></div>
-        <div class="ko-score-item"><span>Semifinal winner (×2)</span><span class="ko-pts">+9</span></div>
+        <div class="ko-score-item"><span>Round of 32 winner (×16)</span><span class="ko-pts">+2</span></div>
+        <div class="ko-score-item"><span>Round of 16 winner (×8)</span><span class="ko-pts">+6</span></div>
+        <div class="ko-score-item"><span>Quarterfinal winner (×4)</span><span class="ko-pts">+10</span></div>
+        <div class="ko-score-item"><span>Semifinal winner (×2)</span><span class="ko-pts">+14</span></div>
         <div class="ko-score-item"><span>Third Place match</span><span class="ko-pts">+0</span></div>
-        <div class="ko-score-item"><span>Final winner (×1)</span><span class="ko-pts">+12</span></div>
+        <div class="ko-score-item"><span>Final winner (×1)</span><span class="ko-pts">+20</span></div>
       </div>
       <p style="font-size:.78rem;color:var(--muted);margin-top:.85rem;">
-        Maximum knockout score: <strong style="color:var(--dark)">146 pts</strong>.
+        Maximum knockout score: <strong style="color:var(--dark)">148 pts</strong>.
         Plus your Phase 1 tournament champion pick is worth <strong style="color:var(--gold-dark)">+15 pts</strong> separately.
       </p>
     </div>
@@ -385,11 +385,11 @@
         Points Per Round
       </div>
       <div class="ko-scoring-grid">
-        <div class="ko-score-item"><span>Round of 32</span><span class="ko-pts">+3</span></div>
-        <div class="ko-score-item"><span>Round of 16</span><span class="ko-pts">+5</span></div>
-        <div class="ko-score-item"><span>Quarterfinals</span><span class="ko-pts">+7</span></div>
-        <div class="ko-score-item"><span>Semifinals</span><span class="ko-pts">+9</span></div>
-        <div class="ko-score-item"><span>Final</span><span class="ko-pts">+12</span></div>
+        <div class="ko-score-item"><span>Round of 32</span><span class="ko-pts">+2</span></div>
+        <div class="ko-score-item"><span>Round of 16</span><span class="ko-pts">+6</span></div>
+        <div class="ko-score-item"><span>Quarterfinals</span><span class="ko-pts">+10</span></div>
+        <div class="ko-score-item"><span>Semifinals</span><span class="ko-pts">+14</span></div>
+        <div class="ko-score-item"><span>Final</span><span class="ko-pts">+20</span></div>
         <div class="ko-score-item"><span>Champion (Phase 1 pick)</span><span class="ko-pts gold">+15</span></div>
       </div>
       <p style="font-size:.75rem;color:var(--muted);margin-top:.85rem;">
@@ -431,12 +431,12 @@
 
     const ROUND_ORDER = ["R32", "R16", "QF", "SF", "3RD", "FINAL"];
     const ROUND_CONFIG = {
-      R32:   { label: "Round of 32",    pts: 3,  badgeCls: "r32-badge",   gridCls: "" },
-      R16:   { label: "Round of 16",    pts: 5,  badgeCls: "r16-badge",   gridCls: "" },
-      QF:    { label: "Quarterfinals",  pts: 7,  badgeCls: "qf-badge",    gridCls: "two" },
-      SF:    { label: "Semifinals",     pts: 9,  badgeCls: "sf-badge",    gridCls: "two" },
+      R32:   { label: "Round of 32",    pts: 2,  badgeCls: "r32-badge",   gridCls: "" },
+      R16:   { label: "Round of 16",    pts: 6,  badgeCls: "r16-badge",   gridCls: "" },
+      QF:    { label: "Quarterfinals",  pts: 10, badgeCls: "qf-badge",    gridCls: "two" },
+      SF:    { label: "Semifinals",     pts: 14, badgeCls: "sf-badge",    gridCls: "two" },
       "3RD": { label: "Third Place",    pts: 0,  badgeCls: "third-badge", gridCls: "single" },
-      FINAL: { label: "The Final 🏆",   pts: 12, badgeCls: "final-badge", gridCls: "single", isFinal: true },
+      FINAL: { label: "The Final 🏆",   pts: 20, badgeCls: "final-badge", gridCls: "single", isFinal: true },
     };
 
     // ── Helpers ──

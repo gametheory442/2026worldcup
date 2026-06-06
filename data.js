@@ -246,11 +246,11 @@ const TOURNAMENT_DATA = {
   scoring: {
     correctGroupMatchWinner: 2,
     correctTournamentWinner: 15,
-    correctR32Winner:        3,
-    correctR16Winner:        5,
-    correctQFWinner:         7,
-    correctSFWinner:         9,
-    correctFinalWinner:      12,
+    correctR32Winner:        2,
+    correctR16Winner:        6,
+    correctQFWinner:         10,
+    correctSFWinner:         14,
+    correctFinalWinner:      20,
   },
 
   dates: {
