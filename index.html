@@ -225,65 +225,10 @@
       margin-top: .75rem;
     }
 
-    /* ── Leaderboard Preview ── */
-    .lb-preview-wrap {
-      position: relative;
-      z-index: 1;
-      padding: 0 1rem 2rem;
-      display: flex;
-      justify-content: center;
-    }
-
-    .lb-preview-inner {
-      width: 100%;
-      max-width: 560px;
-      background: var(--white);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .lb-preview-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: .85rem 1.25rem;
-      background: var(--green);
-      color: #fff;
-    }
-
-    .lb-preview-title {
-      font-family: var(--font-head);
-      font-size: .85rem;
-      font-weight: 700;
-      letter-spacing: .07em;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: .5rem;
-    }
-
-    .lb-preview-icon { font-size: 1rem; }
-
-    .lb-preview-live {
-      display: flex;
-      align-items: center;
-      gap: .4rem;
-      font-size: .68rem;
-      font-weight: 700;
-      font-family: var(--font-head);
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,.75);
-    }
-
+    /* ── Standings Tab ── */
     .lb-live-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #4ADE80;
-      box-shadow: 0 0 6px #4ADE80;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #4ADE80; box-shadow: 0 0 6px #4ADE80;
       animation: livePulse 2s ease-in-out infinite;
     }
     @keyframes livePulse {
@@ -291,124 +236,108 @@
       50%       { opacity: .5; transform: scale(.7); }
     }
 
-    .lb-preview-loading {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: .65rem;
-      padding: 2rem;
-      color: var(--muted);
-      font-size: .85rem;
-    }
+    .st-wrap { padding: 1rem 1rem 2rem; max-width: 760px; margin: 0 auto; }
 
-    .lb-preview-empty {
-      padding: 2rem;
-      text-align: center;
-      font-size: .85rem;
-      color: var(--muted);
-      font-style: italic;
+    /* Sub-tabs inside Standings */
+    .st-tab-bar {
+      display: flex; gap: 0; margin-bottom: 1.25rem;
+      background: var(--white); border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
     }
+    .st-tab {
+      flex: 1; padding: .65rem 1rem; border: none; background: none;
+      font-family: var(--font-head); font-size: .78rem; font-weight: 600;
+      letter-spacing: .06em; text-transform: uppercase;
+      color: var(--muted); cursor: pointer; transition: all .15s;
+      border-bottom: 3px solid transparent;
+    }
+    .st-tab:hover { color: var(--green); background: var(--bg); }
+    .st-tab.active { color: var(--green); border-bottom-color: var(--green); background: var(--green-light); }
 
-    .lb-preview-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .lb-preview-table thead th {
-      font-family: var(--font-head);
-      font-size: .62rem;
-      font-weight: 600;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      padding: .5rem .85rem;
-      border-bottom: 1.5px solid var(--border);
-      text-align: left;
-      background: var(--bg);
-    }
-    .lb-preview-table thead th.right { text-align: right; }
-    .lb-preview-table tbody tr {
-      border-bottom: 1px solid var(--border);
-      transition: background .1s;
-      animation: fadeIn .3s ease both;
-    }
-    .lb-preview-table tbody tr:last-child { border-bottom: none; }
-    .lb-preview-table tbody tr:hover td { background: #F7F5F0; }
-    .lb-preview-table td {
-      padding: .7rem .85rem;
-      font-size: .83rem;
-      vertical-align: middle;
-    }
-    .lb-preview-table td.right { text-align: right; }
+    /* Podium */
+    .st-podium-card { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; margin-bottom: 1.25rem; padding-bottom: 0; }
+    .st-podium-card .card-title { padding: 1rem 1.5rem 0; margin-bottom: 0; }
+    .st-podium-row { display: flex; align-items: flex-end; justify-content: center; gap: .75rem; padding: 1.25rem 1rem 0; }
+    .st-podium-item { display: flex; flex-direction: column; align-items: center; gap: .4rem; flex: 1; max-width: 160px; animation: riseUp .5s cubic-bezier(.22,.68,0,1.2) both; }
+    .st-podium-item:nth-child(1) { animation-delay: .1s; }
+    .st-podium-item:nth-child(2) { animation-delay: 0s; }
+    .st-podium-item:nth-child(3) { animation-delay: .2s; }
+    @keyframes riseUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .st-podium-avatar { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; border: 3px solid rgba(255,255,255,.5); position: relative; font-family: var(--font-emoji); }
+    .st-podium-avatar.p1 { width: 60px; height: 60px; font-size: 1.9rem; background: var(--gold-light); border-color: var(--gold); box-shadow: 0 4px 14px rgba(200,168,75,.4); }
+    .st-podium-avatar.p2 { background: #F1F3F5; border-color: #9CA3AF; }
+    .st-podium-avatar.p3 { background: #FDF0E8; border-color: #CD7F32; }
+    .st-podium-crown { position: absolute; top: -13px; font-size: .9rem; animation: crownBob 2.5s ease-in-out infinite; font-family: var(--font-emoji); }
+    @keyframes crownBob { 0%,100% { transform: rotate(-5deg); } 50% { transform: translateY(-3px) rotate(5deg); } }
+    .st-podium-name { font-family: var(--font-head); font-size: .78rem; font-weight: 600; letter-spacing: .04em; color: var(--dark); text-align: center; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+    .st-podium-score { font-family: var(--font-head); font-size: 1.4rem; font-weight: 700; line-height: 1; color: var(--green); }
+    .st-podium-item:nth-child(2) .st-podium-score { font-size: 1.75rem; color: var(--gold-dark); }
+    .st-podium-pts { font-size: .62rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); margin-top: -.2rem; }
+    .st-podium-blocks { display: flex; align-items: flex-end; gap: .75rem; padding: 0 1rem; margin-top: 0; }
+    .st-podium-block-wrap { flex: 1; display: flex; justify-content: center; }
+    .st-podium-block { width: 80%; max-width: 140px; border-radius: var(--radius) var(--radius) 0 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-head); font-size: 1.3rem; font-weight: 700; color: rgba(255,255,255,.8); }
+    .st-podium-block.pb1 { background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%); height: 64px; }
+    .st-podium-block.pb2 { background: linear-gradient(180deg, #B0B8C4 0%, #8E97A3 100%); height: 46px; }
+    .st-podium-block.pb3 { background: linear-gradient(180deg, #CD7F32 0%, #A86228 100%); height: 32px; }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .lb-preview-table tbody tr:nth-child(1) { animation-delay: .04s; }
-    .lb-preview-table tbody tr:nth-child(2) { animation-delay: .08s; }
-    .lb-preview-table tbody tr:nth-child(3) { animation-delay: .12s; }
-    .lb-preview-table tbody tr:nth-child(4) { animation-delay: .16s; }
-    .lb-preview-table tbody tr:nth-child(5) { animation-delay: .20s; }
+    /* Standings table */
+    .st-card { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; margin-bottom: 1.25rem; }
+    .st-header { display: flex; align-items: center; justify-content: space-between; padding: .85rem 1.25rem; background: var(--green); color: #fff; }
+    .st-header-title { font-family: var(--font-head); font-size: .85rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; display: flex; align-items: center; gap: .5rem; }
+    .st-live { display: flex; align-items: center; gap: .4rem; font-size: .68rem; font-weight: 700; font-family: var(--font-head); letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.75); }
+    .st-loading { display: flex; align-items: center; justify-content: center; gap: .65rem; padding: 2.5rem; color: var(--muted); font-size: .85rem; }
+    .st-empty { padding: 2.5rem; text-align: center; font-size: .85rem; color: var(--muted); font-style: italic; }
+    .st-table { width: 100%; border-collapse: collapse; }
+    .st-table thead th { font-family: var(--font-head); font-size: .62rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: .5rem .85rem; border-bottom: 1.5px solid var(--border); text-align: left; background: var(--bg); }
+    .st-table thead th.right { text-align: right; }
+    .st-table tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; animation: stFadeIn .3s ease both; }
+    .st-table tbody tr:last-child { border-bottom: none; }
+    .st-table tbody tr:hover td { background: #F7F5F0; }
+    .st-table td { padding: .7rem .85rem; font-size: .84rem; vertical-align: middle; }
+    .st-table td.right { text-align: right; }
+    @keyframes stFadeIn { from { opacity:0; transform: translateY(5px); } to { opacity:1; transform:none; } }
+    .st-rank { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-family: var(--font-head); font-size: .75rem; font-weight: 700; }
+    .st-rank-1 { background: var(--gold); color: #fff; }
+    .st-rank-2 { background: #9CA3AF; color: #fff; }
+    .st-rank-3 { background: #CD7F32; color: #fff; }
+    .st-rank-n { background: var(--bg); color: var(--muted); border: 1px solid var(--border); font-size: .7rem; }
+    .st-player { display: flex; align-items: center; gap: .55rem; }
+    .st-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--green-light); border: 1.5px solid var(--green-mid); display: flex; align-items: center; justify-content: center; font-size: 1.05rem; flex-shrink: 0; font-family: var(--font-emoji); }
+    .st-avatar.gold-av { background: var(--gold-light); border-color: var(--gold); }
+    .st-name { font-weight: 600; color: var(--dark); font-size: .84rem; }
+    .st-score { font-family: var(--font-head); font-size: 1rem; font-weight: 700; color: var(--green); }
+    .st-score.zero { color: var(--muted); }
+    .st-bd { font-family: var(--font-head); font-size: .8rem; font-weight: 600; color: var(--text); }
+    .st-bd.zero { color: #CBD5E1; }
+    .st-footer { display: flex; align-items: center; justify-content: flex-end; padding: .55rem 1.1rem; border-top: 1px solid var(--border); background: var(--bg); }
+    .st-updated { font-size: .68rem; color: var(--muted); }
+    .st-pick-notice { display: flex; align-items: center; gap: .65rem; padding: .7rem 1rem; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius); font-size: .82rem; color: #92400E; margin-bottom: 1rem; }
 
-    .lb-rank {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 24px; height: 24px;
-      border-radius: 50%;
-      font-family: var(--font-head);
-      font-size: .75rem;
-      font-weight: 700;
-    }
-    .lb-rank-1 { background: var(--gold); color: #fff; }
-    .lb-rank-2 { background: #9CA3AF; color: #fff; }
-    .lb-rank-3 { background: #CD7F32; color: #fff; }
-    .lb-rank-other { background: var(--bg); color: var(--muted); border: 1px solid var(--border); font-size: .7rem; }
+    /* Groups grid */
+    .st-groups-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .st-group-card { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .st-group-header { display: flex; align-items: center; gap: .6rem; padding: .6rem 1rem; background: linear-gradient(135deg, var(--green-dark), var(--green)); color: #fff; font-family: var(--font-head); font-size: .85rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .st-group-letter { font-size: 1.2rem; min-width: 22px; text-align: center; }
+    .st-gt { width: 100%; border-collapse: collapse; font-size: .78rem; }
+    .st-gt thead th { font-family: var(--font-head); font-size: .6rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: .45rem .4rem; border-bottom: 2px solid var(--border); text-align: center; background: var(--bg); white-space: nowrap; }
+    .st-gt thead th.tc { text-align: left; padding-left: .75rem; }
+    .st-gt tbody tr { border-bottom: 1px solid var(--border); }
+    .st-gt tbody tr:last-child { border-bottom: none; }
+    .st-gt tbody tr:nth-child(-n+2) { background: #F0FDF4; }
+    .st-gt tbody td { padding: .48rem .4rem; text-align: center; vertical-align: middle; font-size: .78rem; }
+    .st-gt tbody td.tc { text-align: left; padding-left: .75rem; font-weight: 600; color: var(--dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+    .st-gt tbody td.pts { font-family: var(--font-head); font-weight: 700; color: var(--green); }
+    .st-rn { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; font-weight: 700; font-size: .68rem; }
+    .st-rn.q { background: var(--green-light); color: var(--green); border: 1px solid var(--green-mid); }
+    .st-rn.e { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+    .st-groups-note { text-align: center; font-size: .73rem; color: var(--muted); margin-top: .75rem; }
 
-    .lb-player {
-      display: flex;
-      align-items: center;
-      gap: .55rem;
-    }
-    .lb-avatar {
-      width: 28px; height: 28px; border-radius: 50%;
-      background: var(--green-light); border: 1.5px solid var(--green-mid);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; flex-shrink: 0;
-    }
-    .lb-avatar.gold-av { background: var(--gold-light); border-color: var(--gold); }
-    .lb-name { font-weight: 600; color: var(--dark); font-size: .83rem; }
-    .lb-score { font-family: var(--font-head); font-size: 1rem; font-weight: 700; color: var(--green); }
-    .lb-score-zero { color: var(--muted); }
-    .lb-breakdown { font-family: var(--font-head); font-size: .8rem; font-weight: 600; color: var(--text); }
-    .lb-breakdown.zero { color: #CBD5E1; }
-
-    .lb-preview-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: .65rem 1.25rem;
-      border-top: 1px solid var(--border);
-      background: var(--bg);
-      gap: .75rem;
-    }
-
-    .lb-preview-link {
-      font-size: .78rem;
-      font-weight: 600;
-      color: var(--green);
-      text-decoration: none;
-      transition: opacity .15s;
-    }
-    .lb-preview-link:hover { opacity: .7; }
-
-    .lb-preview-updated {
-      font-size: .68rem;
-      color: var(--muted);
+    @media (max-width: 600px) {
+      .st-groups-grid { grid-template-columns: 1fr; }
+      .st-hide-xs { display: none; }
     }
 
     @media (max-width: 480px) {
-      .hide-xs { display: none; }
       .stats-strip { border-radius: var(--radius); }
       .login-card  { padding: 1.5rem 1.25rem; }
       .login-input-row { flex-direction: column; }
@@ -762,52 +691,83 @@
 
 <!-- STANDINGS TAB -->
 <div class="tab-panel" id="panel-standings" role="tabpanel">
-  <div class="login-wrap" style="min-height:unset; padding-top:1.5rem;">
-    <div class="lb-preview-wrap" id="lbPreview" style="display:none">
-      <div class="lb-preview-inner">
-        <div class="lb-preview-header">
-          <div class="lb-preview-title">
-            <span class="lb-preview-icon">📊</span>
-            Current Standings
-          </div>
-          <div class="lb-preview-live">
-            <span class="lb-live-dot"></span>
-            Live
-          </div>
-        </div>
-        <div id="lbPreviewLoading" class="lb-preview-loading">
-          <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>
-          <span>Loading standings…</span>
-        </div>
-        <div id="lbPreviewEmpty" class="lb-preview-empty" style="display:none">
-          No picks submitted yet — be the first!
-        </div>
-        <div id="lbPreviewTable" style="display:none">
-          <table class="lb-preview-table">
-            <thead>
-              <tr>
-                <th style="width:36px">#</th>
-                <th>Player</th>
-                <th class="right">Score</th>
-                <th class="right hide-xs">Groups</th>
-                <th class="right hide-xs">Knockout</th>
-                <th class="right hide-xs">🏆</th>
-              </tr>
-            </thead>
-            <tbody id="lbPreviewBody"></tbody>
-          </table>
-        </div>
-        <div class="lb-preview-footer">
-          <a href="leaderboard.html" class="lb-preview-link">View full standings →</a>
-          <span id="lbPreviewUpdated" class="lb-preview-updated"></span>
-        </div>
-      </div>
-    </div>
-    <div id="lbPreviewInitLoading" style="display:flex;align-items:center;justify-content:center;gap:.65rem;padding:3rem 1rem;color:var(--muted);font-size:.85rem;">
-      <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>
-      <span>Loading standings…</span>
-    </div>
+  <!-- Initial loader -->
+  <div id="stGlobalLoading" style="display:flex;align-items:center;justify-content:center;gap:.65rem;padding:3.5rem 1rem;color:var(--muted);font-size:.85rem;">
+    <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>
+    <span>Loading standings…</span>
   </div>
+
+  <div id="stMain" style="display:none">
+    <div class="st-wrap">
+
+      <!-- Sub-tabs -->
+      <div class="st-tab-bar">
+        <button class="st-tab active" id="sttab-leaderboard" onclick="switchStTab('leaderboard')">🏆 Leaderboard</button>
+        <button class="st-tab" id="sttab-groups" onclick="switchStTab('groups')">⚽ Group Standings</button>
+      </div>
+
+      <!-- ── Leaderboard Panel ── -->
+      <div id="stpanel-leaderboard">
+
+        <!-- Podium -->
+        <div class="st-podium-card" id="stPodiumSection" style="display:none">
+          <div class="card-title" style="padding:1rem 1.5rem 0; margin-bottom:0;">🥇 Top 3</div>
+          <div class="st-podium-row" id="stPodiumRow"></div>
+          <div class="st-podium-blocks" id="stPodiumBlocks"></div>
+        </div>
+
+        <!-- Pre-launch notice -->
+        <div id="stPickNotice" class="st-pick-notice" style="display:none">
+          🔒 <span>Champion picks are hidden until the tournament kicks off on <strong>June 11</strong> — selections will be revealed at lock.</span>
+        </div>
+
+        <!-- Full table -->
+        <div class="st-card">
+          <div class="st-header">
+            <div class="st-header-title">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Full Standings
+            </div>
+            <div class="st-live"><span class="lb-live-dot"></span> Live</div>
+          </div>
+          <div id="stLoading" class="st-loading">
+            <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>
+            <span>Loading…</span>
+          </div>
+          <div id="stTableWrap" style="display:none; overflow-x:auto;">
+            <table class="st-table">
+              <thead>
+                <tr>
+                  <th style="width:36px">#</th>
+                  <th>Player</th>
+                  <th class="right">Score</th>
+                  <th class="right st-hide-xs">Groups</th>
+                  <th class="right st-hide-xs">Knockout</th>
+                  <th class="right st-hide-xs">🏆</th>
+                </tr>
+              </thead>
+              <tbody id="stBody"></tbody>
+            </table>
+          </div>
+          <div id="stEmpty" class="st-empty" style="display:none">No picks submitted yet — be the first!</div>
+          <div class="st-footer"><span id="stUpdated" class="st-updated"></span></div>
+        </div>
+
+      </div><!-- /stpanel-leaderboard -->
+
+      <!-- ── Groups Panel ── -->
+      <div id="stpanel-groups" style="display:none">
+        <div id="stGroupsGrid" class="st-groups-grid">
+          <div style="grid-column:1/-1;text-align:center;padding:3rem 1rem;color:var(--muted);">
+            <div style="font-size:2rem;margin-bottom:.5rem;">⚽</div>
+            <div>Loading group standings…</div>
+          </div>
+        </div>
+        <div id="stGroupsNote" class="st-groups-note"></div>
+      </div>
+
+    </div><!-- /st-wrap -->
+  </div><!-- /stMain -->
 </div>
 
 <!-- PICKS TAB -->
@@ -887,7 +847,6 @@
     </div>
   </div>
 
-  <!-- Live Leaderboard Preview moved to Standings tab -->
 
 </div>
 </div><!-- /panel-picks -->
@@ -936,9 +895,10 @@
     getThirdPlaceQualifiers,
     getTournamentConfig,
     calculateScores,
+    getAllFifaStandings,
   } from "./firebase.js";
 
-  /* global TOURNAMENT_DATA */
+  /* global TOURNAMENT_DATA, getTeamFlag, shortName */
 
   // ── If already logged in, redirect ──
   const existing = getSessionUser();
@@ -953,10 +913,7 @@
   async function loadUsers() {
     try {
       const users = await getAllUsers();
-      if (!users || users.length === 0) {
-        hintEl.style.display = "none";
-        return;
-      }
+      if (!users || users.length === 0) { hintEl.style.display = "none"; return; }
       chipsEl.innerHTML = "";
       users
         .sort((a, b) => (a.displayName || a.username).localeCompare(b.displayName || b.username))
@@ -977,110 +934,216 @@
     }
   }
 
-  // ── Load leaderboard preview ──
-  async function loadLeaderboardPreview() {
-    const previewWrap = document.getElementById("lbPreview");
+  // ── Standings tab switching ──
+  let stGroupsLoaded = false;
+  window.switchStTab = function(tab) {
+    document.querySelectorAll(".st-tab").forEach(b => b.classList.toggle("active", b.id === "sttab-" + tab));
+    document.getElementById("stpanel-leaderboard").style.display = tab === "leaderboard" ? "" : "none";
+    document.getElementById("stpanel-groups").style.display      = tab === "groups" ? "" : "none";
+    if (tab === "groups" && !stGroupsLoaded) loadStGroups();
+  };
+
+  // ── Render podium ──
+  function renderStPodium(scores, phase1Locked) {
+    if (scores.length < 2) { document.getElementById("stPodiumSection").style.display = "none"; return; }
+    const top3  = scores.slice(0, Math.min(3, scores.length));
+    // Display order: 2nd · 1st · 3rd
+    const order = top3.length === 2 ? [top3[1], top3[0]] : [top3[1], top3[0], top3[2]];
+
+    document.getElementById("stPodiumRow").innerHTML = order.map(entry => {
+      const rank  = top3.indexOf(entry) + 1;
+      const avCls = rank === 1 ? "p1" : rank === 2 ? "p2" : "p3";
+      const flag  = (phase1Locked && entry.winnerPick)
+        ? (TOURNAMENT_DATA.teams[entry.winnerPick]?.flag || "👤") : "👤";
+      return `
+        <div class="st-podium-item">
+          <div class="st-podium-avatar ${avCls}">
+            ${rank === 1 ? '<span class="st-podium-crown">👑</span>' : ""}
+            ${flag}
+          </div>
+          <div class="st-podium-name">${entry.displayName || entry.username}</div>
+          <div class="st-podium-score">${entry.score}</div>
+          <div class="st-podium-pts">pts</div>
+        </div>`;
+    }).join("");
+
+    const blockOrder = top3.length === 2
+      ? [{ cls:"pb2",n:"2" }, { cls:"pb1",n:"1" }]
+      : [{ cls:"pb2",n:"2" }, { cls:"pb1",n:"1" }, { cls:"pb3",n:"3" }];
+    document.getElementById("stPodiumBlocks").innerHTML = blockOrder.map(b =>
+      `<div class="st-podium-block-wrap"><div class="st-podium-block ${b.cls}">${b.n}</div></div>`
+    ).join("");
+
+    document.getElementById("stPodiumSection").style.display = "";
+  }
+
+  // ── Render full standings table ──
+  function renderStTable(scores, phase1Locked) {
+    document.getElementById("stLoading").style.display = "none";
+    if (!scores.length) {
+      document.getElementById("stEmpty").style.display = "block";
+      return;
+    }
+    document.getElementById("stTableWrap").style.display = "block";
+
+    document.getElementById("stBody").innerHTML = scores.map((entry, idx) => {
+      const rank = idx + 1;
+      const bd   = entry.breakdown || {};
+      const wp   = entry.winnerPick;
+      const avatarEmoji = (phase1Locked && wp)
+        ? (TOURNAMENT_DATA.teams[wp]?.flag || "👤") : "👤";
+      const rankBadge = rank <= 3
+        ? `<span class="st-rank st-rank-${rank}">${rank}</span>`
+        : `<span class="st-rank st-rank-n">${rank}</span>`;
+      const bonusCell = bd.winner > 0
+        ? `<span class="st-bd">${bd.winner}</span>`
+        : `<span class="st-bd zero">—</span>`;
+      return `
+        <tr>
+          <td style="padding-left:.75rem">${rankBadge}</td>
+          <td>
+            <div class="st-player">
+              <div class="st-avatar ${rank === 1 ? 'gold-av' : ''}">${avatarEmoji}</div>
+              <span class="st-name">${entry.displayName || entry.username}</span>
+            </div>
+          </td>
+          <td class="right"><span class="st-score ${entry.score === 0 ? 'zero' : ''}">${entry.score}</span></td>
+          <td class="right st-hide-xs"><span class="st-bd ${!bd.groupStage ? 'zero' : ''}">${bd.groupStage || 0}</span></td>
+          <td class="right st-hide-xs"><span class="st-bd ${!bd.knockout ? 'zero' : ''}">${bd.knockout || 0}</span></td>
+          <td class="right st-hide-xs">${bonusCell}</td>
+        </tr>`;
+    }).join("");
+
+    const now = new Date();
+    document.getElementById("stUpdated").textContent =
+      `Updated ${now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+  }
+
+  // ── Load full standings ──
+  async function loadStandings() {
     try {
       const [allPicksDocs, allKoResults, allGroupResults, actualThirdQualifiers, allUsers, config] = await Promise.all([
-        getAllPicks(),
-        getAllResults(),
-        getAllGroupStandings(),
-        getThirdPlaceQualifiers(),
-        getAllUsers(),
-        getTournamentConfig(),
+        getAllPicks(), getAllResults(), getAllGroupStandings(),
+        getThirdPlaceQualifiers(), getAllUsers(), getTournamentConfig(),
       ]);
 
-      // Show the section regardless (even if empty)
-      previewWrap.style.display = "flex";
-      const initLoader = document.getElementById("lbPreviewInitLoading");
-      if (initLoader) initLoader.style.display = "none";
-
       const phase1Locked = !!config.phase1Locked;
+      document.getElementById("stPickNotice").style.display = phase1Locked ? "none" : "flex";
 
       const displayMap = {};
       allUsers.forEach(u => { displayMap[u.username] = u.displayName || u.username; });
 
-      const scores = calculateScores(
-        allPicksDocs,
-        allKoResults,
-        allGroupResults,
-        actualThirdQualifiers,
-        TOURNAMENT_DATA.scoring
-      );
-
-      // Build winner pick map
       const wpMap = {};
       allPicksDocs.forEach(p => { wpMap[p.username] = p.winnerPick || null; });
 
+      const scores = calculateScores(
+        allPicksDocs, allKoResults, allGroupResults,
+        actualThirdQualifiers, TOURNAMENT_DATA.scoring
+      );
       scores.forEach(s => {
         s.displayName = displayMap[s.username] || s.username;
         s.winnerPick  = wpMap[s.username] || null;
       });
 
-      document.getElementById("lbPreviewLoading").style.display = "none";
+      renderStPodium(scores, phase1Locked);
+      renderStTable(scores, phase1Locked);
 
-      if (!scores.length) {
-        document.getElementById("lbPreviewEmpty").style.display = "block";
-        return;
-      }
-
-      document.getElementById("lbPreviewTable").style.display = "block";
-
-      // Show top 8 (or fewer)
-      const top = scores.slice(0, 8);
-      const tbody = document.getElementById("lbPreviewBody");
-
-      tbody.innerHTML = top.map((entry, idx) => {
-        const rank = idx + 1;
-        const display = entry.displayName || entry.username;
-        const bd = entry.breakdown || {};
-        const wp = entry.winnerPick;
-        const wpFlag = (phase1Locked && wp) ? (TOURNAMENT_DATA.teams[wp]?.flag || "🏳️") : null;
-        const avatarEmoji = (phase1Locked && wp) ? wpFlag : "👤";
-        const avatarCls = rank === 1 ? "lb-avatar gold-av" : "lb-avatar";
-
-        const rankBadge = rank === 1 ? `<span class="lb-rank lb-rank-1">1</span>`
-          : rank === 2 ? `<span class="lb-rank lb-rank-2">2</span>`
-          : rank === 3 ? `<span class="lb-rank lb-rank-3">3</span>`
-          : `<span class="lb-rank lb-rank-other">${rank}</span>`;
-
-        // Champion bonus cell: hidden before phase1Locked
-        const bonusCell = bd.winner > 0
-          ? `<span class="lb-breakdown">${bd.winner}</span>`
-          : `<span class="lb-breakdown zero">—</span>`;
-
-        return `
-          <tr>
-            <td style="padding-left:.75rem">${rankBadge}</td>
-            <td>
-              <div class="lb-player">
-                <div class="${avatarCls}">${avatarEmoji}</div>
-                <span class="lb-name">${display}</span>
-              </div>
-            </td>
-            <td class="right"><span class="lb-score ${entry.score === 0 ? 'lb-score-zero' : ''}">${entry.score}</span></td>
-            <td class="right hide-xs"><span class="lb-breakdown ${!bd.groupStage ? 'zero' : ''}">${bd.groupStage || 0}</span></td>
-            <td class="right hide-xs"><span class="lb-breakdown ${!bd.knockout ? 'zero' : ''}">${bd.knockout || 0}</span></td>
-            <td class="right hide-xs">${bonusCell}</td>
-          </tr>`;
-      }).join("");
-
-      const now = new Date();
-      document.getElementById("lbPreviewUpdated").textContent =
-        `Updated ${now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+      document.getElementById("stGlobalLoading").style.display = "none";
+      document.getElementById("stMain").style.display = "";
 
     } catch (err) {
-      console.error("Failed to load leaderboard preview:", err);
-      // Don't show the section if it errors — fail silently
-    } finally {
-      // Hide the initial full-panel loader regardless of success/failure
-      const initLoader = document.getElementById("lbPreviewInitLoading");
-      if (initLoader) initLoader.style.display = "none";
+      console.error("Failed to load standings:", err);
+      document.getElementById("stGlobalLoading").innerHTML =
+        `<div style="text-align:center;color:var(--error);padding:2rem;">
+          <div style="font-size:1.5rem;margin-bottom:.4rem">⚠️</div>
+          <div style="font-size:.85rem">Failed to load standings. Check your connection.</div>
+         </div>`;
     }
   }
 
+  // ── Load groups ──
+  const GROUPS = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+  async function loadStGroups() {
+    try {
+      const standings = await getAllFifaStandings();
+      renderStGroups(standings);
+      stGroupsLoaded = true;
+    } catch (err) {
+      console.error("Failed to load groups:", err);
+      document.getElementById("stGroupsGrid").innerHTML =
+        `<div style="grid-column:1/-1;text-align:center;padding:2.5rem;color:var(--muted);">
+          <div style="font-size:1.5rem;margin-bottom:.4rem">⚠️</div>
+          <div style="font-size:.85rem">Failed to load groups. Try again later.</div>
+         </div>`;
+    }
+  }
+
+  function renderStGroups(standings) {
+    const grid = document.getElementById("stGroupsGrid");
+    if (!standings || Object.keys(standings).length === 0) {
+      grid.innerHTML = GROUPS.map(g => renderStEmptyGroup(g)).join("");
+      document.getElementById("stGroupsNote").textContent =
+        "Tournament begins June 11 — group standings will update live once matches start.";
+      return;
+    }
+    grid.innerHTML = GROUPS.map(g => {
+      const data = standings[g];
+      if (!data || !data.teams || !data.teams.length) return renderStEmptyGroup(g);
+      return renderStGroupCard(g, data.teams);
+    }).join("");
+    const updatedAt = Object.values(standings).find(s => s.updatedAt)?.updatedAt;
+    if (updatedAt) {
+      const d = updatedAt.toDate ? updatedAt.toDate() : new Date(updatedAt);
+      document.getElementById("stGroupsNote").textContent =
+        `Standings last synced: ${d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+    }
+  }
+
+  function renderStGroupCard(g, teams) {
+    const rows = teams.map((t, i) => {
+      const flag = (typeof getTeamFlag === "function" && getTeamFlag(t.team)) || "🏳️";
+      const name = (typeof shortName === "function" && shortName(t.team)) || t.team;
+      const rankCls = i < 2 ? "q" : "e";
+      return `<tr>
+        <td><span class="st-rn ${rankCls}">${t.rank || i + 1}</span></td>
+        <td class="tc">${flag} ${name}</td>
+        <td>${t.played}</td><td>${t.win}</td><td>${t.draw}</td><td>${t.loss}</td>
+        <td>${t.goalDiff > 0 ? "+" + t.goalDiff : t.goalDiff}</td>
+        <td class="pts">${t.points}</td>
+      </tr>`;
+    }).join("");
+    return `<div class="st-group-card">
+      <div class="st-group-header"><span class="st-group-letter">${g}</span> Group ${g}</div>
+      <table class="st-gt"><thead><tr>
+        <th style="width:26px">#</th><th class="tc">Team</th>
+        <th>MP</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th>
+      </tr></thead><tbody>${rows}</tbody></table>
+    </div>`;
+  }
+
+  function renderStEmptyGroup(g) {
+    const teams = TOURNAMENT_DATA.groups[g]?.teams || [];
+    const rows = teams.map((t, i) => {
+      const flag = (typeof getTeamFlag === "function" && getTeamFlag(t)) || "🏳️";
+      const name = (typeof shortName === "function" && shortName(t)) || t;
+      const rankCls = i < 2 ? "q" : "e";
+      return `<tr>
+        <td><span class="st-rn ${rankCls}">${i + 1}</span></td>
+        <td class="tc">${flag} ${name}</td>
+        <td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="pts">0</td>
+      </tr>`;
+    }).join("");
+    return `<div class="st-group-card">
+      <div class="st-group-header"><span class="st-group-letter">${g}</span> Group ${g}</div>
+      <table class="st-gt"><thead><tr>
+        <th style="width:26px">#</th><th class="tc">Team</th>
+        <th>MP</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th>
+      </tr></thead><tbody>${rows}</tbody></table>
+    </div>`;
+  }
+
   loadUsers();
-  loadLeaderboardPreview();
+  loadStandings();
 
   // ── Login logic ──
   const loginBtn  = document.getElementById("login-btn");
@@ -1089,22 +1152,14 @@
 
   async function doLogin() {
     const raw = inputEl.value.trim();
-    if (!raw) {
-      errorEl.style.display = "flex";
-      inputEl.focus();
-      return;
-    }
+    if (!raw) { errorEl.style.display = "flex"; inputEl.focus(); return; }
     errorEl.style.display = "none";
-
     loginBtn.disabled    = true;
     loginBtn.textContent = "…";
     inputEl.disabled     = true;
-
     try {
       const exists = await userExists(raw);
-      if (!exists) {
-        await createUser(raw);
-      }
+      if (!exists) await createUser(raw);
       setSessionUser(raw);
       window.location.href = "picks.html";
     } catch (err) {
@@ -1118,12 +1173,8 @@
   }
 
   loginBtn.addEventListener("click", doLogin);
-  inputEl.addEventListener("keydown", e => {
-    if (e.key === "Enter") doLogin();
-  });
-  inputEl.addEventListener("input", () => {
-    if (inputEl.value.trim()) errorEl.style.display = "none";
-  });
+  inputEl.addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+  inputEl.addEventListener("input", () => { if (inputEl.value.trim()) errorEl.style.display = "none"; });
 </script>
 
 </body>
