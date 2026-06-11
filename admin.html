@@ -357,7 +357,7 @@
       <!-- Group Standings Tab -->
       <div class="tab-content" id="tab-group">
         <div class="alert alert-info" style="margin-bottom:1rem;">
-          ℹ️ After the group stage, enter the final finishing order (1st–4th) for each group. This triggers scoring for all players' group predictions.
+          ℹ️ Group rankings sync automatically from ESPN as games finish, and player scoring updates with them. Saving a group manually here overrides the auto-sync for that group (use it to correct a tiebreaker ESPN gets wrong).
         </div>
         <div class="groups-grid" id="groupStandingsContainer">
           <div class="loading-state" style="grid-column:1/-1;"><div class="spinner"></div> Loading groups…</div>
@@ -655,8 +655,15 @@
     // ─────────────────────────────────────
     // SUMMARY
     // ─────────────────────────────────────
+    // A group counts as done when 4 standings exist and they're final —
+    // ESPN auto-synced docs carry final:false until all teams have played 3 games.
+    function isGroupDone(g) {
+      const r = allGroupResults[g];
+      return r?.standings?.length === 4 && r.final !== false;
+    }
+
     function renderSummary() {
-      const groupsDone = GROUPS.filter(g => allGroupResults[g]?.standings?.length === 4).length;
+      const groupsDone = GROUPS.filter(isGroupDone).length;
       const koDone     = TOURNAMENT_DATA.knockoutMatches.filter(m => allKoResults[m.id]).length;
       const picksCount = allPicks.filter(p => {
         const gp = p.groupPicks;
@@ -695,7 +702,7 @@
     // STATS ROW
     // ─────────────────────────────────────
     function updateStats() {
-      const groupsDone = GROUPS.filter(g => allGroupResults[g]?.standings?.length === 4).length;
+      const groupsDone = GROUPS.filter(isGroupDone).length;
       const koDone     = TOURNAMENT_DATA.knockoutMatches.filter(m => allKoResults[m.id]).length;
       const picksCount = allPicks.filter(p => {
         const gp = p.groupPicks;
@@ -717,6 +724,8 @@
         const teams    = getGroupTeams(g);
         const existing = allGroupResults[g]?.standings || [];
         const hasResult = existing.length === 4;
+        const isAuto   = hasResult && allGroupResults[g]?.source === "espn";
+        const isFinal  = allGroupResults[g]?.final !== false;
 
         const teamTeamNames = teams.map(t => `${getTeamFlag(t)} ${shortName(t)}`).join(" · ");
 
@@ -759,7 +768,7 @@
                 <div class="group-card-teams">${teamTeamNames}</div>
               </div>
               <div class="group-card-status ${hasResult ? 'entered' : 'pending'}">
-                ${hasResult ? '✓ Entered' : 'Pending'}
+                ${hasResult ? (isAuto ? (isFinal ? '⟳ Auto (ESPN)' : '⟳ Live (ESPN)') : '✓ Manual') : 'Pending'}
               </div>
             </div>
             <div class="group-standings-body">
@@ -768,11 +777,13 @@
             </div>
             <div class="group-card-footer">
               <span class="group-save-status" id="gsstatus_${g}">
-                ${hasResult ? `✓ Saved: ${existing.map(t => shortName(t)).join(" › ")}` : 'Not saved yet'}
+                ${hasResult
+                  ? `${isAuto ? '⟳ Synced' : '✓ Saved'}: ${existing.map(t => shortName(t)).join(" › ")}`
+                  : 'Not saved yet'}
               </span>
               <button class="save-group-btn" id="gsbtn_${g}" onclick="saveGroupResult('${g}')">
                 <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                Save Standings
+                ${isAuto ? 'Save Override' : 'Save Standings'}
               </button>
             </div>
           </div>
@@ -826,11 +837,11 @@
 
       try {
         await saveGroupStandings(g, standings);
-        allGroupResults[g] = { standings };
+        allGroupResults[g] = { standings, source: "manual" };
 
         // Update card
         card.classList.add("has-result");
-        card.querySelector(".group-card-status").textContent  = "✓ Entered";
+        card.querySelector(".group-card-status").textContent  = "✓ Manual";
         card.querySelector(".group-card-status").className    = "group-card-status entered";
         status.textContent  = `✓ Saved: ${standings.map(t => shortName(t)).join(" › ")}`;
         status.className    = "group-save-status saved";
@@ -994,12 +1005,12 @@
     // Gather all teams that actually finished 3rd in their group (from entered standings)
     function getActual3rdPlaceTeams() {
       return GROUPS
-        .filter(g => allGroupResults[g]?.standings?.length === 4)
+        .filter(isGroupDone)
         .map(g => ({ group: g, team: allGroupResults[g].standings[2] }));
     }
 
     function renderThirdQualifiersPanel() {
-      const groupsDone = GROUPS.filter(g => allGroupResults[g]?.standings?.length === 4).length;
+      const groupsDone = GROUPS.filter(isGroupDone).length;
       const section    = document.getElementById("thirdQualifiersSection");
 
       if (groupsDone < 12) {

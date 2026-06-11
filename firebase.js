@@ -117,14 +117,15 @@ export async function getAllPicks() {
 // -----------------------------------------------------------
 
 /**
- * Save the final standings for a group.
+ * Save the final standings for a group (manual admin entry).
  * groupId:   "A"–"L"
  * standings: ["Mexico","South Africa","South Korea","UEFA Path D"]  (1st→4th)
+ * source "manual" stops the ESPN auto-sync from overwriting this group.
  */
 export async function saveGroupStandings(groupId, standings) {
   await setDoc(
     doc(db, "results", `group_${groupId}`),
-    { type: "groupStandings", groupId, standings, enteredAt: serverTimestamp() },
+    { type: "groupStandings", groupId, standings, source: "manual", enteredAt: serverTimestamp() },
     { merge: true }
   );
 }

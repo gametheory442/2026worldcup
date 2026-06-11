@@ -82,6 +82,63 @@ const ESPN_TEAM_NAME_MAP = {
   "Bolivia": "bolivia",
 };
 
+// Internal key → canonical team name as used in data.js / picks / scoring
+const KEY_TO_CANONICAL = {
+  "mexico": "Mexico",
+  "south-africa": "South Africa",
+  "south-korea": "South Korea",
+  "czechia": "Czechia",
+  "canada": "Canada",
+  "bosnia": "Bosnia & Herzegovina",
+  "qatar": "Qatar",
+  "switzerland": "Switzerland",
+  "brazil": "Brazil",
+  "morocco": "Morocco",
+  "haiti": "Haiti",
+  "scotland": "Scotland",
+  "usa": "United States",
+  "paraguay": "Paraguay",
+  "australia": "Australia",
+  "turkey": "Türkiye",
+  "germany": "Germany",
+  "ivory-coast": "Ivory Coast",
+  "ecuador": "Ecuador",
+  "curacao": "Curaçao",
+  "netherlands": "Netherlands",
+  "japan": "Japan",
+  "sweden": "Sweden",
+  "tunisia": "Tunisia",
+  "belgium": "Belgium",
+  "egypt": "Egypt",
+  "iran": "Iran",
+  "new-zealand": "New Zealand",
+  "spain": "Spain",
+  "saudi-arabia": "Saudi Arabia",
+  "uruguay": "Uruguay",
+  "cape-verde": "Cape Verde",
+  "france": "France",
+  "senegal": "Senegal",
+  "norway": "Norway",
+  "iraq": "Iraq",
+  "argentina": "Argentina",
+  "algeria": "Algeria",
+  "austria": "Austria",
+  "jordan": "Jordan",
+  "portugal": "Portugal",
+  "uzbekistan": "Uzbekistan",
+  "colombia": "Colombia",
+  "dr-congo": "DR Congo",
+  "england": "England",
+  "croatia": "Croatia",
+  "ghana": "Ghana",
+  "panama": "Panama",
+};
+
+function toCanonicalName(espnName) {
+  const key = resolveTeamKey(espnName);
+  return key ? KEY_TO_CANONICAL[key] || null : null;
+}
+
 const GROUP_MATCHES = {
   1: ["mexico", "south-africa"], 2: ["south-korea", "czechia"], 3: ["canada", "bosnia"], 4: ["usa", "paraguay"],
   5: ["qatar", "switzerland"], 6: ["brazil", "morocco"], 7: ["haiti", "scotland"], 8: ["australia", "turkey"],
@@ -351,10 +408,20 @@ async function doSyncResults() {
 async function doSyncStandings() {
   const data = await fetchESPNStandings();
   const children = data.children || [];
-  if (!children.length) return { updated: 0 };
+  if (!children.length) return { updated: 0, rankingsUpdated: 0 };
+
+  // Load existing results/group_* docs so a manual admin entry is never overwritten
+  const groupLetters = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+  const existingRefs = groupLetters.map(g => db.collection("results").doc(`group_${g}`));
+  const existingSnaps = await db.getAll(...existingRefs);
+  const manualGroups = new Set();
+  existingSnaps.forEach((snap, i) => {
+    if (snap.exists && snap.data().source === "manual") manualGroups.add(groupLetters[i]);
+  });
 
   const batch = db.batch();
   let updated = 0;
+  let rankingsUpdated = 0;
 
   for (const group of children) {
     const groupName = group.name || ""; // e.g. "Group A"
@@ -388,10 +455,39 @@ async function doSyncStandings() {
       { merge: true }
     );
     updated++;
+
+    // Mirror the live ranking into results/group_X so player scoring updates
+    // automatically. Skipped if the admin saved this group manually, before
+    // any game in the group has been played (order would be arbitrary), or
+    // if any ESPN team name fails to map to a canonical data.js name.
+    if (manualGroups.has(letter)) continue;
+    if (teams.length !== 4) continue;
+    if (!teams.some(t => t.played > 0)) continue;
+
+    const canonical = teams.map(t => toCanonicalName(t.team));
+    if (canonical.some(name => !name)) {
+      console.warn(`Group ${letter}: unmapped team name in standings`, teams.map(t => t.team));
+      continue;
+    }
+
+    const isFinal = teams.every(t => t.played >= 3);
+    batch.set(
+      db.collection("results").doc(`group_${letter}`),
+      {
+        type: "groupStandings",
+        groupId: letter,
+        standings: canonical,
+        source: "espn",
+        final: isFinal,
+        enteredAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+    rankingsUpdated++;
   }
 
-  if (updated > 0) await batch.commit();
-  return { updated };
+  if (updated > 0 || rankingsUpdated > 0) await batch.commit();
+  return { updated, rankingsUpdated };
 }
 
 // ── Scheduled function: every 10 min, 9am–midnight PT ──
