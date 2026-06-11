@@ -363,8 +363,8 @@
           <div class="loading-state" style="grid-column:1/-1;"><div class="spinner"></div> Loading groups…</div>
         </div>
 
-        <!-- Third-place qualifiers section — shown once all 12 group standings are entered -->
-        <div id="thirdQualifiersSection" style="margin-top:1.5rem; display:none;">
+        <!-- Third-place qualifiers section — candidates appear as groups finish -->
+        <div id="thirdQualifiersSection" style="margin-top:1.5rem;">
           <div class="results-card">
             <div class="results-card-header">
               <div class="results-card-title">⭐ Third-Place Qualifiers</div>
@@ -372,7 +372,8 @@
             </div>
             <div style="padding:.85rem 1.25rem; border-bottom:1px solid var(--border); font-size:.82rem; color:var(--muted); line-height:1.55;">
               Select the <strong style="color:var(--dark)">8 third-place teams</strong> that actually qualified for the Round of 32.
-              This unlocks the +1 consolation tier-scoring for all players' group stage picks.
+              This unlocks the +1 consolation tier-scoring for teams that finished 3rd (1st/2nd/4th tier points score automatically).
+              Candidates appear below as each group plays its final matchday.
             </div>
             <div style="padding:.85rem 1.25rem;">
               <div id="thirdQualGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:.4rem;">
@@ -1011,13 +1012,6 @@
 
     function renderThirdQualifiersPanel() {
       const groupsDone = GROUPS.filter(isGroupDone).length;
-      const section    = document.getElementById("thirdQualifiersSection");
-
-      if (groupsDone < 12) {
-        section.style.display = "none";
-        return;
-      }
-      section.style.display = "block";
 
       const thirdTeams = getActual3rdPlaceTeams();
       const savedSet   = new Set(actualThirdQualifiers);
@@ -1026,9 +1020,19 @@
       document.getElementById("thirdQualCount").textContent =
         `${count} / 8 ${count === 8 ? '✓' : 'entered'}`;
       document.getElementById("thirdQualStatus").textContent =
-        count === 8 ? `✓ Saved: ${actualThirdQualifiers.join(", ")}` : `Select 8 teams, then save.`;
+        count === 8 ? `✓ Saved: ${actualThirdQualifiers.join(", ")}`
+        : groupsDone < 12 ? `${groupsDone}/12 groups final — select 8 teams once candidates are in, then save.`
+        : `Select 8 teams, then save.`;
       document.getElementById("thirdQualStatus").style.color =
         count === 8 ? "var(--success)" : "var(--muted)";
+
+      if (!thirdTeams.length) {
+        document.getElementById("thirdQualGrid").innerHTML =
+          `<div style="grid-column:1/-1; padding:1rem; font-size:.82rem; color:var(--muted);">
+            No groups final yet — third-place candidates will appear here as each group finishes its 3 matchdays.
+          </div>`;
+        return;
+      }
 
       document.getElementById("thirdQualGrid").innerHTML = thirdTeams.map(({ group, team }) => {
         const checked = savedSet.has(team);

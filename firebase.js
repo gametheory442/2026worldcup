@@ -250,7 +250,9 @@ export function checkAdminPin(pin) { return pin === ADMIN_PIN; }
  *   +3  exact position match
  *   +1  wrong position but correct tier (advance vs eliminated), using
  *        user's own thirdPlaceAdvancing picks for predicted tier and
- *        actualThirdPlaceQualifiers for actual tier
+ *        actualThirdPlaceQualifiers for actual tier. Teams actually in
+ *        1st/2nd/4th score this immediately; a team actually in 3rd is
+ *        in limbo until actualThirdPlaceQualifiers is entered.
  *   0   otherwise
  *
  * @param {Object}   groupPicks               — { A: [t,t,t,t], ..., thirdPlaceAdvancing: [...] }
@@ -291,8 +293,9 @@ export function scoreGroupStandings(groupPicks, groupStandings, actualThirdPlace
       } else if (actualPos !== -1) {
         // Team is in results but at the wrong position.
         // Award +1 if the advance/eliminate tier prediction is correct.
-        // Only applies when actualThirdPlaceQualifiers has been entered.
-        if (actualThirdPlaceQualifiers !== null) {
+        // A team actually in 3rd has an unknown tier until the third-place
+        // qualifiers are entered; 1st/2nd/4th can be scored right away.
+        if (actualPos !== 2 || actualThirdPlaceQualifiers !== null) {
           const predictedAdvances = teamPredictedToAdvance(predictedTeam, i, predictedThirdSet);
           const actuallyAdvances  = teamActuallyAdvances(predictedTeam, actualPos, actualThirdSet);
           if (predictedAdvances === actuallyAdvances) pts = 1;
