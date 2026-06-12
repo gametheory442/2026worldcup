@@ -160,6 +160,22 @@ const GROUP_MATCHES = {
   69: ["colombia", "portugal"], 70: ["dr-congo", "uzbekistan"], 71: ["algeria", "austria"], 72: ["jordan", "argentina"],
 };
 
+// Group letter → the four internal team keys (order = data.js seeding, used as last-resort tiebreak)
+const GROUP_TEAMS = {
+  A: ["mexico", "south-africa", "south-korea", "czechia"],
+  B: ["canada", "bosnia", "qatar", "switzerland"],
+  C: ["brazil", "morocco", "haiti", "scotland"],
+  D: ["usa", "paraguay", "australia", "turkey"],
+  E: ["germany", "ivory-coast", "ecuador", "curacao"],
+  F: ["netherlands", "japan", "sweden", "tunisia"],
+  G: ["belgium", "egypt", "iran", "new-zealand"],
+  H: ["spain", "saudi-arabia", "uruguay", "cape-verde"],
+  I: ["france", "senegal", "norway", "iraq"],
+  J: ["argentina", "algeria", "austria", "jordan"],
+  K: ["portugal", "uzbekistan", "colombia", "dr-congo"],
+  L: ["england", "croatia", "ghana", "panama"],
+};
+
 const KNOCKOUT_MATCHES = [
   { id: "match_73", matchNum: 73, round: "R32", date: "2026-06-28" },
   { id: "match_74", matchNum: 74, round: "R32", date: "2026-06-29" },
@@ -405,49 +421,106 @@ async function doSyncResults() {
   return summary;
 }
 
+// Group tables are computed from our own synced match results — ESPN's
+// standings endpoint lags its scoreboard feed by hours, so it can't be the
+// source of truth for live scoring. ESPN's order is kept only as a residual
+// tiebreak (it eventually reflects fair-play points we can't compute).
 async function doSyncStandings() {
-  const data = await fetchESPNStandings();
-  const children = data.children || [];
-  if (!children.length) return { updated: 0, rankingsUpdated: 0 };
+  let espnOrder = {}; // letter → { teamKey: index }
+  try {
+    const data = await fetchESPNStandings();
+    for (const group of data.children || []) {
+      const letter = (group.name || "").replace("Group ", "").trim();
+      if (!letter || letter.length !== 1) continue;
+      const order = {};
+      (group.standings?.entries || []).forEach((entry, idx) => {
+        const key = resolveTeamKey(entry.team?.displayName || "");
+        if (key) order[key] = idx;
+      });
+      espnOrder[letter] = order;
+    }
+  } catch (err) {
+    console.warn("ESPN standings fetch failed; using seeding as residual tiebreak:", err.message);
+  }
 
-  // Load existing results/group_* docs so a manual admin entry is never overwritten
-  const groupLetters = ["A","B","C","D","E","F","G","H","I","J","K","L"];
-  const existingRefs = groupLetters.map(g => db.collection("results").doc(`group_${g}`));
-  const existingSnaps = await db.getAll(...existingRefs);
+  // One read of the results collection gives both the group match scores and
+  // which groups the admin has manually overridden.
+  const resultsSnap = await db.collection("results").get();
   const manualGroups = new Set();
-  existingSnaps.forEach((snap, i) => {
-    if (snap.exists && snap.data().source === "manual") manualGroups.add(groupLetters[i]);
+  const groupGames = [];
+  resultsSnap.docs.forEach(d => {
+    const data = d.data();
+    const groupDoc = d.id.match(/^group_([A-L])$/);
+    if (groupDoc) {
+      if (data.source === "manual") manualGroups.add(groupDoc[1]);
+      return;
+    }
+    const m = d.id.match(/^match_(\d+)$/);
+    if (!m || Number(m[1]) > 72) return;
+    const homeKey = resolveTeamKey(data.homeTeam || "");
+    const awayKey = resolveTeamKey(data.awayTeam || "");
+    if (!homeKey || !awayKey) return;
+    if (typeof data.homeGoals !== "number" || typeof data.awayGoals !== "number") return;
+    groupGames.push({ homeKey, awayKey, homeGoals: data.homeGoals, awayGoals: data.awayGoals });
   });
 
   const batch = db.batch();
   let updated = 0;
   let rankingsUpdated = 0;
 
-  for (const group of children) {
-    const groupName = group.name || ""; // e.g. "Group A"
-    const letter = groupName.replace("Group ", "").trim();
-    if (!letter || letter.length !== 1) continue;
+  for (const [letter, teamKeys] of Object.entries(GROUP_TEAMS)) {
+    const keySet = new Set(teamKeys);
+    const games = groupGames.filter(g => keySet.has(g.homeKey) && keySet.has(g.awayKey));
 
-    const standings = group.standings?.entries || [];
-    const teams = standings.map((entry, idx) => {
-      const teamName = entry.team?.displayName || "";
-      const stats = {};
-      for (const s of entry.stats || []) {
-        stats[s.name] = s.value;
+    const stats = {};
+    teamKeys.forEach(k => { stats[k] = { played: 0, win: 0, draw: 0, loss: 0, gf: 0, ga: 0 }; });
+    for (const g of games) {
+      stats[g.homeKey].played++; stats[g.awayKey].played++;
+      stats[g.homeKey].gf += g.homeGoals; stats[g.homeKey].ga += g.awayGoals;
+      stats[g.awayKey].gf += g.awayGoals; stats[g.awayKey].ga += g.homeGoals;
+      if (g.homeGoals > g.awayGoals)      { stats[g.homeKey].win++;  stats[g.awayKey].loss++; }
+      else if (g.homeGoals < g.awayGoals) { stats[g.awayKey].win++;  stats[g.homeKey].loss++; }
+      else                                { stats[g.homeKey].draw++; stats[g.awayKey].draw++; }
+    }
+    const pts = k => stats[k].win * 3 + stats[k].draw;
+    const gd  = k => stats[k].gf - stats[k].ga;
+
+    // Head-to-head between two tied teams (negative → a ranks ahead of b).
+    // FIFA applies head-to-head among the full tied subset; pairwise is a
+    // close approximation and the admin can manually override any group.
+    const h2h = (a, b) => {
+      let aPts = 0, bPts = 0, aGoals = 0, bGoals = 0;
+      for (const g of games) {
+        if (!((g.homeKey === a && g.awayKey === b) || (g.homeKey === b && g.awayKey === a))) continue;
+        const aG = g.homeKey === a ? g.homeGoals : g.awayGoals;
+        const bG = g.homeKey === a ? g.awayGoals : g.homeGoals;
+        aGoals += aG; bGoals += bG;
+        if (aG > bG) aPts += 3; else if (aG < bG) bPts += 3; else { aPts += 1; bPts += 1; }
       }
-      return {
-        rank: idx + 1,
-        team: teamName,
-        played: stats["gamesPlayed"] ?? 0,
-        win: stats["wins"] ?? 0,
-        draw: stats["ties"] ?? 0,
-        loss: stats["losses"] ?? 0,
-        goalsFor: stats["pointsFor"] ?? 0,
-        goalsAgainst: stats["pointsAgainst"] ?? 0,
-        goalDiff: stats["pointDifferential"] ?? 0,
-        points: stats["points"] ?? 0,
-      };
-    });
+      return (bPts - aPts) || (bGoals - aGoals);
+    };
+
+    const sorted = [...teamKeys].sort((a, b) =>
+      pts(b) - pts(a) ||
+      gd(b) - gd(a) ||
+      stats[b].gf - stats[a].gf ||
+      h2h(a, b) ||
+      ((espnOrder[letter]?.[a] ?? 99) - (espnOrder[letter]?.[b] ?? 99)) ||
+      teamKeys.indexOf(a) - teamKeys.indexOf(b)
+    );
+
+    const teams = sorted.map((k, idx) => ({
+      rank: idx + 1,
+      team: KEY_TO_CANONICAL[k],
+      played: stats[k].played,
+      win: stats[k].win,
+      draw: stats[k].draw,
+      loss: stats[k].loss,
+      goalsFor: stats[k].gf,
+      goalsAgainst: stats[k].ga,
+      goalDiff: gd(k),
+      points: pts(k),
+    }));
 
     batch.set(
       db.collection("fifa_standings").doc(`group_${letter}`),
@@ -456,27 +529,19 @@ async function doSyncStandings() {
     );
     updated++;
 
-    // Mirror the live ranking into results/group_X so player scoring updates
-    // automatically. Skipped if the admin saved this group manually, before
-    // any game in the group has been played (order would be arbitrary), or
-    // if any ESPN team name fails to map to a canonical data.js name.
+    // Mirror the ranking into results/group_X so player scoring updates
+    // automatically — unless the admin saved this group manually, or no
+    // game has been played yet (order would be arbitrary).
     if (manualGroups.has(letter)) continue;
-    if (teams.length !== 4) continue;
-    if (!teams.some(t => t.played > 0)) continue;
+    if (!games.length) continue;
 
-    const canonical = teams.map(t => toCanonicalName(t.team));
-    if (canonical.some(name => !name)) {
-      console.warn(`Group ${letter}: unmapped team name in standings`, teams.map(t => t.team));
-      continue;
-    }
-
-    const isFinal = teams.every(t => t.played >= 3);
+    const isFinal = teamKeys.every(k => stats[k].played >= 3);
     batch.set(
       db.collection("results").doc(`group_${letter}`),
       {
         type: "groupStandings",
         groupId: letter,
-        standings: canonical,
+        standings: sorted.map(k => KEY_TO_CANONICAL[k]),
         source: "espn",
         final: isFinal,
         enteredAt: admin.firestore.FieldValue.serverTimestamp(),
