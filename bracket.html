@@ -329,11 +329,11 @@
         <div class="ko-score-item"><span>Round of 16 winner (×8)</span><span class="ko-pts">+6</span></div>
         <div class="ko-score-item"><span>Quarterfinal winner (×4)</span><span class="ko-pts">+10</span></div>
         <div class="ko-score-item"><span>Semifinal winner (×2)</span><span class="ko-pts">+14</span></div>
-        <div class="ko-score-item"><span>Third Place match</span><span class="ko-pts">+0</span></div>
+        <div class="ko-score-item"><span>Third Place match</span><span class="ko-pts">+14</span></div>
         <div class="ko-score-item"><span>Final winner (×1)</span><span class="ko-pts">+20</span></div>
       </div>
       <p style="font-size:.78rem;color:var(--muted);margin-top:.85rem;">
-        Maximum knockout score: <strong style="color:var(--dark)">148 pts</strong>.
+        Maximum knockout score: <strong style="color:var(--dark)">182 pts</strong>.
         Plus your Phase 1 tournament champion pick is worth <strong style="color:var(--gold-dark)">+15 pts</strong> separately.
       </p>
     </div>
@@ -389,6 +389,7 @@
         <div class="ko-score-item"><span>Round of 16</span><span class="ko-pts">+6</span></div>
         <div class="ko-score-item"><span>Quarterfinals</span><span class="ko-pts">+10</span></div>
         <div class="ko-score-item"><span>Semifinals</span><span class="ko-pts">+14</span></div>
+        <div class="ko-score-item"><span>Third Place</span><span class="ko-pts">+14</span></div>
         <div class="ko-score-item"><span>Final</span><span class="ko-pts">+20</span></div>
         <div class="ko-score-item"><span>Champion (Phase 1 pick)</span><span class="ko-pts gold">+15</span></div>
       </div>
@@ -410,6 +411,7 @@
   </div>
 
   <script src="data.js"></script>
+  <script src="js/annex-c.js"></script>
   <script type="module">
     import {
       getSessionUser,
@@ -418,16 +420,24 @@
       savePhase2Picks,
       getTournamentConfig,
       getAllResults,
+      getAllGroupStandings,
+      getThirdPlaceQualifiers,
     } from "./firebase.js";
 
     /* global TOURNAMENT_DATA */
 
     // ── State ──
-    let currentUser   = null;
-    let knockoutPicks = {};
-    let isLocked      = false;
-    let hasUnsaved    = false;
-    let liveResults   = {};
+    let currentUser     = null;
+    let knockoutPicks   = {};
+    let isLocked        = false;
+    let hasUnsaved      = false;
+    let liveResults     = {};
+    let groupStandings  = {};   // { A: { standings:[t,t,t,t], final }, ... }
+    let thirdQualifiers = null; // 8 team names that advanced as 3rd, or null
+    let bestThirdSlots  = {};   // { match_79: "S. Korea", ... } resolved best-3rd teams (global)
+
+    const MATCH_BY_ID = {};
+    TOURNAMENT_DATA.knockoutMatches.forEach(m => { MATCH_BY_ID[m.id] = m; });
 
     const ROUND_ORDER = ["R32", "R16", "QF", "SF", "3RD", "FINAL"];
     const ROUND_CONFIG = {
@@ -435,7 +445,7 @@
       R16:   { label: "Round of 16",    pts: 6,  badgeCls: "r16-badge",   gridCls: "" },
       QF:    { label: "Quarterfinals",  pts: 10, badgeCls: "qf-badge",    gridCls: "two" },
       SF:    { label: "Semifinals",     pts: 14, badgeCls: "sf-badge",    gridCls: "two" },
-      "3RD": { label: "Third Place",    pts: 0,  badgeCls: "third-badge", gridCls: "single" },
+      "3RD": { label: "Third Place",    pts: 14, badgeCls: "third-badge", gridCls: "single" },
       FINAL: { label: "The Final 🏆",   pts: 20, badgeCls: "final-badge", gridCls: "single", isFinal: true },
     };
 
@@ -482,6 +492,71 @@
         str.startsWith("Best 3rd") ||
         str === "TBD"
       );
+    }
+
+    // ── Slot resolution ──────────────────────────────────────
+    // Turn each match's descriptor slots into real team names.
+    //   1st/2nd Group X  → from actual final group standings
+    //   Best 3rd …       → via FIFA Annex C once the 8 qualifiers are set
+    //   W/L Match N      → propagated from THIS player's own picks
+    // Returns a real team name, or null when not yet determined (TBD).
+
+    function groupIsFinal(letter) {
+      const g = groupStandings?.[letter];
+      return !!(g && Array.isArray(g.standings) && g.standings.length === 4 && g.final !== false);
+    }
+
+    // Resolve the 8 global "Best 3rd" slots from the entered qualifiers + Annex C.
+    function computeBestThirdSlots() {
+      bestThirdSlots = {};
+      if (!Array.isArray(thirdQualifiers) || thirdQualifiers.length !== 8) return;
+      const letters = thirdQualifiers.map(t => TOURNAMENT_DATA.teams[t]?.group).filter(Boolean);
+      if (letters.length !== 8 || new Set(letters).size !== 8) return;
+      if (!letters.every(groupIsFinal)) return;
+      const slotMap = (typeof resolveThirdPlaceSlots === "function") ? resolveThirdPlaceSlots(letters) : null;
+      if (!slotMap) return;
+      for (const [matchId, letter] of Object.entries(slotMap)) {
+        bestThirdSlots[matchId] = groupStandings[letter].standings[2];
+      }
+    }
+
+    function resolveDesc(desc, matchId) {
+      if (!desc || desc === "TBD") return null;
+      let m;
+      if ((m = desc.match(/^1st Group ([A-L])$/))) return groupIsFinal(m[1]) ? groupStandings[m[1]].standings[0] : null;
+      if ((m = desc.match(/^2nd Group ([A-L])$/))) return groupIsFinal(m[1]) ? groupStandings[m[1]].standings[1] : null;
+      if (desc.startsWith("Best 3rd"))            return bestThirdSlots[matchId] || null;
+      if ((m = desc.match(/^W Match (\d+)$/)))     return knockoutPicks["match_" + m[1]] || null;
+      if ((m = desc.match(/^L Match (\d+)$/))) {
+        const fid = "match_" + m[1];
+        const pick = knockoutPicks[fid];
+        const t1 = resolveTeamSlot(fid, 1), t2 = resolveTeamSlot(fid, 2);
+        if (!pick || !t1 || !t2) return null;
+        return pick === t1 ? t2 : (pick === t2 ? t1 : null);
+      }
+      return null;
+    }
+
+    function resolveTeamSlot(matchId, slotNum) {
+      const m = MATCH_BY_ID[matchId];
+      if (!m) return null;
+      return resolveDesc(slotNum === 1 ? m.team1Desc : m.team2Desc, matchId);
+    }
+
+    // Drop any pick that no longer matches either (fully resolved) participant —
+    // e.g. an upstream pick changed, so a downstream team is no longer in its match.
+    // Iterate round order a few times so invalidations cascade to the Final.
+    function pruneInvalidPicks() {
+      for (let pass = 0; pass < ROUND_ORDER.length; pass++) {
+        let changed = false;
+        TOURNAMENT_DATA.knockoutMatches.forEach(m => {
+          const pick = knockoutPicks[m.id];
+          if (!pick) return;
+          const t1 = resolveTeamSlot(m.id, 1), t2 = resolveTeamSlot(m.id, 2);
+          if (t1 && t2 && pick !== t1 && pick !== t2) { delete knockoutPicks[m.id]; changed = true; }
+        });
+        if (!changed) break;
+      }
     }
 
     // ── Render all rounds ──
@@ -532,9 +607,6 @@
       const picked  = knockoutPicks[m.id];
       const hasPick = !!picked;
 
-      const desc1 = m.team1Desc || "TBD";
-      const desc2 = m.team2Desc || "TBD";
-
       return `
         <div class="bracket-match ${cfg.isFinal ? 'final-match' : ''} ${hasPick ? 'has-pick' : ''}" id="card_${m.id}">
           <div class="bracket-match-header">
@@ -542,34 +614,35 @@
             <span class="bracket-match-meta">${fmtDate(m.date)}<br>${m.venue}</span>
           </div>
           <div class="bracket-pick">
-            ${renderTeamOption(m, desc1, 1, picked)}
+            ${renderTeamOption(m, 1, picked)}
             <div class="vs-divider"><span class="vs-text">vs</span></div>
-            ${renderTeamOption(m, desc2, 2, picked)}
+            ${renderTeamOption(m, 2, picked)}
           </div>
-          ${result ? `<div class="result-badge">✓ Result: ${result.winner}</div>` : ''}
+          ${result ? `<div class="result-badge">✓ Result: ${shortName(result.winner)}</div>` : ''}
         </div>
       `;
     }
 
-    function renderTeamOption(m, desc, teamNum, currentPick) {
-      if (!desc || desc === "TBD") {
-        return `<div class="tbd-label">🏳️ <span>To Be Determined</span></div>`;
+    function renderTeamOption(m, teamNum, currentPick) {
+      const desc = (teamNum === 1 ? m.team1Desc : m.team2Desc) || "TBD";
+      const team = resolveTeamSlot(m.id, teamNum); // real team name, or null if not yet known
+
+      // Not yet determined — show the descriptor as a greyed hint, not pickable.
+      if (!team) {
+        const hint = isDescriptor(desc) ? desc : "To Be Determined";
+        return `<div class="tbd-label">🏳️ <span>${hint}</span></div>`;
       }
 
-      const flag    = isDescriptor(desc) ? "🏳️" : getFlag(desc);
-      const name    = isDescriptor(desc) ? desc : shortName(desc);
-      const radioId = `pick_${m.id}_t${teamNum}`;
-      const checked = currentPick === desc ? "checked" : "";
-
-      // Safe-escape for onchange attr
-      const safeDesc = desc.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+      const radioId  = `pick_${m.id}_t${teamNum}`;
+      const checked  = currentPick === team ? "checked" : "";
+      const safeTeam = team.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 
       return `
-        <input type="radio" class="bracket-radio" id="${radioId}" name="pick_${m.id}" value="${desc}" ${checked}
-               onchange="onPick('${m.id}', '${safeDesc}')" ${isLocked ? 'disabled' : ''}>
+        <input type="radio" class="bracket-radio" id="${radioId}" name="pick_${m.id}" value="${team}" ${checked}
+               onchange="onPick('${m.id}', '${safeTeam}')" ${isLocked ? 'disabled' : ''}>
         <label for="${radioId}" class="bracket-label">
-          <span class="flag">${flag}</span>
-          <span class="name">${name}</span>
+          <span class="flag">${getFlag(team)}</span>
+          <span class="name">${shortName(team)}</span>
         </label>
       `;
     }
@@ -613,8 +686,10 @@
     // ── Handlers (window-exposed) ──
     window.onPick = function(matchId, value) {
       knockoutPicks[matchId] = value;
-      const card = document.getElementById(`card_${matchId}`);
-      if (card) card.classList.add("has-pick");
+      // This pick changes the teams in downstream matches ("W Match N"), which can
+      // invalidate later picks — prune them, then re-render so the bracket re-flows.
+      pruneInvalidPicks();
+      renderBracket();
       updateProgress();
       updateRoundProgress();
       markDirty();
@@ -662,13 +737,17 @@
       });
 
       try {
-        const [config, picks, results] = await Promise.all([
+        const [config, picks, results, standings, thirds] = await Promise.all([
           getTournamentConfig(),
           getUserPicks(user),
           getAllResults(),
+          getAllGroupStandings(),
+          getThirdPlaceQualifiers(),
         ]);
 
-        liveResults = results || {};
+        liveResults     = results || {};
+        groupStandings  = standings || {};
+        thirdQualifiers = thirds || null;
 
         // Gate: Phase 1 must be locked first
         if (!config.phase1Locked) {
@@ -682,6 +761,10 @@
         if (picks?.knockoutPicks) {
           knockoutPicks = picks.knockoutPicks;
         }
+
+        // Resolve descriptor slots → real teams, then drop any now-invalid picks
+        computeBestThirdSlots();
+        pruneInvalidPicks();
 
         // Render
         renderBracket();

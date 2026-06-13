@@ -250,6 +250,7 @@ const TOURNAMENT_DATA = {
     correctR16Winner:        6,
     correctQFWinner:         10,
     correctSFWinner:         14,
+    correctThirdPlaceWinner: 14,
     correctFinalWinner:      20,
   },
 

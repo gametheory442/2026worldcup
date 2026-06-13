@@ -390,6 +390,7 @@ export function calculateScores(allPicks, allKoResults, allGroupResults, actualT
         match_97:  scoring.correctQFWinner,   match_98:  scoring.correctQFWinner,
         match_99:  scoring.correctQFWinner,   match_100: scoring.correctQFWinner,
         match_101: scoring.correctSFWinner,   match_102: scoring.correctSFWinner,
+        match_103: scoring.correctThirdPlaceWinner,
         match_104: scoring.correctFinalWinner,
       };
 
