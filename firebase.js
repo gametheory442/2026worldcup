@@ -125,7 +125,9 @@ export async function getAllPicks() {
 export async function saveGroupStandings(groupId, standings) {
   await setDoc(
     doc(db, "results", `group_${groupId}`),
-    { type: "groupStandings", groupId, standings, source: "manual", enteredAt: serverTimestamp() },
+    // playedTeams = all 4: a manual entry is the final order, so every team's
+    // position counts. This also clears any stale provisional list from ESPN.
+    { type: "groupStandings", groupId, standings, playedTeams: standings, source: "manual", enteredAt: serverTimestamp() },
     { merge: true }
   );
 }
@@ -271,6 +273,12 @@ export function scoreGroupStandings(groupPicks, groupStandings, actualThirdPlace
   GROUPS.forEach(g => {
     const predicted = groupPicks?.[g];
     const actual    = groupStandings?.[g]?.standings;
+    const playedTeams = groupStandings?.[g]?.playedTeams;
+    // If playedTeams is present (ESPN provisional sync), only those teams have a
+    // determined position — a team that hasn't played yet sits in an arbitrary
+    // seeded slot, so it scores nothing until it plays. Absent (manual/final
+    // entry or legacy doc) → every team counts as played.
+    const playedSet = Array.isArray(playedTeams) ? new Set(playedTeams) : null;
 
     if (!predicted || !Array.isArray(predicted) || predicted.length < 4 ||
         !actual    || !Array.isArray(actual)    || actual.length < 4) {
@@ -287,10 +295,14 @@ export function scoreGroupStandings(groupPicks, groupStandings, actualThirdPlace
 
       let pts = 0;
 
-      if (predicted[i] === actual[i]) {
+      // A team that hasn't played a game yet has no earned position — hold it at
+      // 0 until it plays (same spirit as the 3rd-place advancement limbo).
+      const hasPlayed = !playedSet || playedSet.has(predictedTeam);
+
+      if (hasPlayed && predicted[i] === actual[i]) {
         // Exact position match
         pts = 3;
-      } else if (actualPos !== -1) {
+      } else if (hasPlayed && actualPos !== -1) {
         // Team is in results but at the wrong position.
         // Award +1 if the advance/eliminate tier prediction is correct.
         // A team actually in 3rd has an unknown tier until the third-place
@@ -303,7 +315,7 @@ export function scoreGroupStandings(groupPicks, groupStandings, actualThirdPlace
       }
 
       groupPts += pts;
-      detail.push({ team: predictedTeam, predictedPos: i + 1, actualPos: actualPos + 1, pts });
+      detail.push({ team: predictedTeam, predictedPos: i + 1, actualPos: actualPos + 1, pts, played: hasPlayed });
     }
 
     byGroup[g] = { pts: groupPts, detail, entered: true };

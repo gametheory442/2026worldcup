@@ -542,6 +542,9 @@ async function doSyncStandings() {
         type: "groupStandings",
         groupId: letter,
         standings: sorted.map(k => KEY_TO_CANONICAL[k]),
+        // Teams that have actually played — only these have a determined
+        // position, so only these earn points (scoring holds the rest at 0).
+        playedTeams: sorted.filter(k => stats[k].played > 0).map(k => KEY_TO_CANONICAL[k]),
         source: "espn",
         final: isFinal,
         enteredAt: admin.firestore.FieldValue.serverTimestamp(),
