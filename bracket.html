@@ -192,6 +192,34 @@
       font-style: italic;
     }
 
+    /* View toggle */
+    .view-toggle { display: inline-flex; border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .view-toggle button {
+      border: 0; background: var(--white); padding: .4rem .85rem; font-size: .8rem; font-weight: 600;
+      color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: .35rem;
+    }
+    .view-toggle button + button { border-left: 1.5px solid var(--border); }
+    .view-toggle button.active { background: var(--green); color: #fff; }
+
+    /* Visual bracket view */
+    .bv-scroll { overflow-x: auto; padding-bottom: .75rem; -webkit-overflow-scrolling: touch; }
+    .bv-cols { display: flex; gap: 1rem; min-width: max-content; align-items: stretch; }
+    .bv-col { display: flex; flex-direction: column; justify-content: space-around; width: 215px; flex-shrink: 0; gap: .5rem; }
+    .bv-col-head {
+      font-family: var(--font-head); font-size: .66rem; font-weight: 700; letter-spacing: .07em;
+      text-transform: uppercase; color: var(--green); text-align: center; padding: .3rem 0; margin-bottom: .25rem;
+      border-bottom: 1.5px solid var(--border); position: sticky; top: 0;
+    }
+    .bv-col .bracket-match { padding: .6rem .7rem; }
+    .bv-col .bracket-match-header { margin-bottom: .45rem; }
+    .bv-col .bracket-label { padding: .4rem .55rem; font-size: .78rem; }
+    .bv-final-col { justify-content: center; gap: 1.25rem; }
+    .bv-thirdplace-head { color: var(--muted); }
+
+    @media (max-width: 640px) {
+      .bv-col { width: 180px; }
+    }
+
     /* Result badge */
     .result-badge {
       margin-top: .5rem;
@@ -373,6 +401,20 @@
       </div>
     </div>
 
+    <!-- View toggle -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:.75rem;">
+      <div class="view-toggle" id="viewToggle">
+        <button id="viewListBtn" onclick="switchView('list')">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          List
+        </button>
+        <button id="viewBracketBtn" onclick="switchView('bracket')">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M3 5h6M3 19h6M9 5v14M9 12h6M15 12V8M15 16v-4M15 12h6"/></svg>
+          Bracket
+        </button>
+      </div>
+    </div>
+
     <!-- Bracket rounds -->
     <div id="bracketContainer">
       <!-- Rendered by JS -->
@@ -437,6 +479,7 @@
     let thirdQualifiers = null; // 8 team names that advanced as 3rd, or null
     let bestThirdSlots  = {};   // { match_79: "S. Korea", ... } resolved best-3rd teams (global)
     let slotOverrides   = {};   // admin overrides: { match_79: "TeamName", ... }
+    let currentView     = "list"; // "list" | "bracket"
 
     const MATCH_BY_ID = {};
     TOURNAMENT_DATA.knockoutMatches.forEach(m => { MATCH_BY_ID[m.id] = m; });
@@ -609,6 +652,58 @@
       }
     }
 
+    // ── Visual bracket view ──
+    // Order R32 leaves by the knockout tree (via feedsMatch) so each round's
+    // columns line up under their feeders, giving the classic bracket shape.
+    function bracketLeafOrder() {
+      const leaves = id => {
+        const feeders = TOURNAMENT_DATA.knockoutMatches.filter(x => x.feedsMatch === id)
+          .sort((a, b) => a.matchNum - b.matchNum);
+        return feeders.length ? feeders.flatMap(f => leaves(f.id)) : [id];
+      };
+      return leaves("match_104");
+    }
+
+    function renderBracketView() {
+      const order = bracketLeafOrder();
+      const idxOf = {}; order.forEach((id, i) => idxOf[id] = i);
+      const minLeaf = id => {
+        const feeders = TOURNAMENT_DATA.knockoutMatches.filter(x => x.feedsMatch === id);
+        return feeders.length ? Math.min(...feeders.map(f => minLeaf(f.id))) : idxOf[id];
+      };
+
+      const cols = [["R32","Round of 32"],["R16","Round of 16"],["QF","Quarterfinals"],["SF","Semifinals"]];
+      let html = `<div class="bv-scroll"><div class="bv-cols">`;
+      cols.forEach(([round, label]) => {
+        const cfg = ROUND_CONFIG[round];
+        const matches = TOURNAMENT_DATA.knockoutMatches.filter(m => m.round === round)
+          .sort((a, b) => minLeaf(a.id) - minLeaf(b.id));
+        html += `<div class="bv-col"><div class="bv-col-head">${label}</div>` +
+          matches.map(m => renderMatchCard(m, cfg)).join("") + `</div>`;
+      });
+      html += `<div class="bv-col bv-final-col">
+        <div><div class="bv-col-head">The Final 🏆</div>${renderMatchCard(MATCH_BY_ID["match_104"], ROUND_CONFIG.FINAL)}</div>
+        <div><div class="bv-col-head bv-thirdplace-head">Third Place</div>${renderMatchCard(MATCH_BY_ID["match_103"], ROUND_CONFIG["3RD"])}</div>
+      </div>`;
+      html += `</div></div>`;
+
+      document.getElementById("bracketContainer").innerHTML = html;
+      if (isLocked) document.querySelectorAll(".bracket-radio").forEach(el => el.disabled = true);
+    }
+
+    function renderActive() {
+      if (currentView === "bracket") renderBracketView();
+      else renderBracket();
+    }
+
+    window.switchView = function(view) {
+      currentView = view;
+      try { localStorage.setItem("wc2026_bracketView", view); } catch (e) {}
+      document.getElementById("viewListBtn").classList.toggle("active", view === "list");
+      document.getElementById("viewBracketBtn").classList.toggle("active", view === "bracket");
+      renderActive();
+    };
+
     function renderMatchCard(m, cfg) {
       const result  = liveResults[m.id];
       const picked  = knockoutPicks[m.id];
@@ -696,7 +791,7 @@
       // This pick changes the teams in downstream matches ("W Match N"), which can
       // invalidate later picks — prune them, then re-render so the bracket re-flows.
       pruneInvalidPicks();
-      renderBracket();
+      renderActive();
       updateProgress();
       updateRoundProgress();
       markDirty();
@@ -775,8 +870,15 @@
         computeBestThirdSlots();
         pruneInvalidPicks();
 
+        // Default view: remembered choice, else bracket on wide screens, list on mobile
+        let savedView = null;
+        try { savedView = localStorage.getItem("wc2026_bracketView"); } catch (e) {}
+        currentView = savedView || (window.innerWidth >= 900 ? "bracket" : "list");
+        document.getElementById("viewListBtn").classList.toggle("active", currentView === "list");
+        document.getElementById("viewBracketBtn").classList.toggle("active", currentView === "bracket");
+
         // Render
-        renderBracket();
+        renderActive();
         updateProgress();
 
         // Banners
