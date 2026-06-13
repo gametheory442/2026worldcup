@@ -229,6 +229,24 @@ export async function updateTournamentConfig(updates) {
 }
 
 // -----------------------------------------------------------
+// BRACKET SLOT OVERRIDES
+// -----------------------------------------------------------
+// Admin override for which team fills a best-third R32 slot, as a safety net
+// behind the automatic Annex C resolution. Map of { match_75: "Morocco", ... }.
+// A null/empty value means "use the automatic resolution".
+
+const BRACKET_OVERRIDES_REF = doc(db, "results", "bracket_overrides");
+
+export async function getBracketSlotOverrides() {
+  const snap = await getDoc(BRACKET_OVERRIDES_REF);
+  return snap.exists() ? (snap.data().slots || {}) : {};
+}
+
+export async function saveBracketSlotOverrides(slots) {
+  await setDoc(BRACKET_OVERRIDES_REF, { slots, enteredAt: serverTimestamp() }, { merge: true });
+}
+
+// -----------------------------------------------------------
 // ADMIN AUTH
 // -----------------------------------------------------------
 

@@ -407,6 +407,15 @@
           </div>
           <div id="apiSyncError" class="alert alert-error" style="display:none;margin-top:.85rem;"></div>
         </div>
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-title">🎯 Best-Third R32 Slot Assignment</div>
+          <div style="font-size:.78rem;color:var(--muted);margin:-.25rem 0 .85rem;line-height:1.55;">
+            The 8 Round-of-32 slots that face a third-placed team fill automatically from FIFA's Annex C table once you enter the third-place qualifiers (in the Group Standings tab). Override any slot here only if the auto-assignment looks wrong.
+          </div>
+          <div id="bracketOverrideContainer">
+            <div class="loading-state"><div class="spinner"></div> Loading…</div>
+          </div>
+        </div>
         <div id="knockoutResultsContainer">
           <div class="loading-state"><div class="spinner"></div> Loading matches…</div>
         </div>
@@ -429,6 +438,7 @@
   <div class="toast" id="toast"></div>
 
   <script src="data.js"></script>
+  <script src="js/annex-c.js"></script>
   <script type="module">
     import {
       checkAdminPin,
@@ -440,6 +450,8 @@
       getAllGroupStandings,
       saveThirdPlaceQualifiers,
       getThirdPlaceQualifiers,
+      getBracketSlotOverrides,
+      saveBracketSlotOverrides,
       getAllUsers,
       getAllPicks,
     } from "./firebase.js";
@@ -455,9 +467,12 @@
     let allUsers              = [];
     let allPicks              = [];
     let config                = {};
+    let bracketOverrides      = {};  // { match_79: "TeamName", ... } admin best-third overrides
 
     const GROUPS      = ["A","B","C","D","E","F","G","H","I","J","K","L"];
     const ROUND_ORDER = ["R32","R16","QF","SF","3RD","FINAL"];
+    // The 8 R32 matches whose second slot is a best-third team
+    const BEST_THIRD_MATCHES = ["match_79","match_85","match_82","match_75","match_81","match_78","match_88","match_80"];
 
     // ─────────────────────────────────────
     // PIN GATE
@@ -948,6 +963,84 @@
     };
 
     // ─────────────────────────────────────
+    // BEST-THIRD R32 SLOT OVERRIDES
+    // ─────────────────────────────────────
+    function groupFinalForOverride(letter) {
+      const r = allGroupResults[letter];
+      return r && Array.isArray(r.standings) && r.standings.length === 4 && r.final !== false;
+    }
+
+    function computeAutoBestThird() {
+      const auto = {};
+      if (actualThirdQualifiers.length !== 8) return auto;
+      const letters = actualThirdQualifiers.map(t => TOURNAMENT_DATA.teams[t]?.group).filter(Boolean);
+      if (letters.length !== 8 || new Set(letters).size !== 8 || !letters.every(groupFinalForOverride)) return auto;
+      const slotMap = (typeof resolveThirdPlaceSlots === "function") ? resolveThirdPlaceSlots(letters) : null;
+      if (!slotMap) return auto;
+      for (const [mid, L] of Object.entries(slotMap)) auto[mid] = allGroupResults[L].standings[2];
+      return auto;
+    }
+
+    function renderBracketOverrides() {
+      const container = document.getElementById("bracketOverrideContainer");
+      if (!container) return;
+      const auto = computeAutoBestThird();
+      const candidates = actualThirdQualifiers.slice();
+      const matches = BEST_THIRD_MATCHES
+        .map(id => TOURNAMENT_DATA.knockoutMatches.find(m => m.id === id))
+        .filter(Boolean)
+        .sort((a, b) => a.matchNum - b.matchNum);
+
+      const rows = matches.map(m => {
+        const cur     = bracketOverrides[m.id] || "";
+        const autoTm  = auto[m.id];
+        const autoLbl = autoTm ? `⚙ Auto: ${shortName(autoTm)}` : "⚙ Auto (set qualifiers first)";
+        const opts = [`<option value="">${autoLbl}</option>`]
+          .concat(candidates.map(t => `<option value="${t}" ${cur === t ? "selected" : ""}>${getTeamFlag(t)} ${shortName(t)}</option>`))
+          .join("");
+        return `
+          <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+            <span style="font-family:var(--font-head);font-size:.7rem;font-weight:700;color:var(--muted);min-width:64px;">Match ${m.matchNum}</span>
+            <span style="font-size:.82rem;min-width:130px;">${m.team1Desc} vs <strong>3rd</strong></span>
+            <select id="ovr_${m.id}" class="filter-input" style="min-width:180px;flex:1;">${opts}</select>
+          </div>`;
+      }).join("");
+
+      container.innerHTML = `
+        ${rows}
+        <div style="margin-top:.85rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;">
+          <span id="ovrStatus" style="font-size:.78rem;color:var(--muted);">Leave a slot on “Auto” to use the Annex C result.</span>
+          <button class="save-group-btn" id="ovrSaveBtn" onclick="saveBracketOverrides()">
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Save Overrides
+          </button>
+        </div>`;
+    }
+
+    window.saveBracketOverrides = async function() {
+      const slots = {};
+      BEST_THIRD_MATCHES.forEach(id => {
+        const el = document.getElementById(`ovr_${id}`);
+        if (el && el.value) slots[id] = el.value;
+      });
+      const btn = document.getElementById("ovrSaveBtn");
+      btn.disabled = true;
+      btn.innerHTML = `<div class="spinner" style="width:11px;height:11px;border-width:2px;"></div>`;
+      try {
+        await saveBracketSlotOverrides(slots);
+        bracketOverrides = slots;
+        toast("Bracket slot overrides saved!", "success");
+        renderBracketOverrides();
+      } catch (err) {
+        console.error(err);
+        toast("Save failed. Check connection.", "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Save Overrides`;
+      }
+    };
+
+    // ─────────────────────────────────────
     // PLAYERS TAB
     // ─────────────────────────────────────
     function renderPlayers() {
@@ -1078,6 +1171,7 @@
         await saveThirdPlaceQualifiers(actualThirdQualifiers);
         toast("Third-place qualifiers saved! ✓", "success");
         renderThirdQualifiersPanel();
+        renderBracketOverrides();
       } catch (err) {
         console.error(err);
         toast("Save failed. Check connection.", "error");
@@ -1092,11 +1186,12 @@
     // ─────────────────────────────────────
     async function initAdmin() {
       try {
-        [config, allKoResults, allGroupResults, actualThirdQualifiers, allUsers, allPicks] = await Promise.all([
+        [config, allKoResults, allGroupResults, actualThirdQualifiers, bracketOverrides, allUsers, allPicks] = await Promise.all([
           getTournamentConfig(),
           getAllResults(),
           getAllGroupStandings(),
           getThirdPlaceQualifiers().then(r => r || []),
+          getBracketSlotOverrides().then(r => r || {}),
           getAllUsers(),
           getAllPicks(),
         ]);
@@ -1106,6 +1201,7 @@
         renderSummary();
         renderGroupStandingsTab();
         renderThirdQualifiersPanel();
+        renderBracketOverrides();
         renderKnockoutResults();
         renderPlayers();
         renderApiSyncStatus();

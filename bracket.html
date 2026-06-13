@@ -422,6 +422,7 @@
       getAllResults,
       getAllGroupStandings,
       getThirdPlaceQualifiers,
+      getBracketSlotOverrides,
     } from "./firebase.js";
 
     /* global TOURNAMENT_DATA */
@@ -435,6 +436,7 @@
     let groupStandings  = {};   // { A: { standings:[t,t,t,t], final }, ... }
     let thirdQualifiers = null; // 8 team names that advanced as 3rd, or null
     let bestThirdSlots  = {};   // { match_79: "S. Korea", ... } resolved best-3rd teams (global)
+    let slotOverrides   = {};   // admin overrides: { match_79: "TeamName", ... }
 
     const MATCH_BY_ID = {};
     TOURNAMENT_DATA.knockoutMatches.forEach(m => { MATCH_BY_ID[m.id] = m; });
@@ -506,17 +508,22 @@
       return !!(g && Array.isArray(g.standings) && g.standings.length === 4 && g.final !== false);
     }
 
-    // Resolve the 8 global "Best 3rd" slots from the entered qualifiers + Annex C.
+    // Resolve the 8 global "Best 3rd" slots from the entered qualifiers + Annex C,
+    // then let any admin override win over the automatic resolution.
     function computeBestThirdSlots() {
       bestThirdSlots = {};
-      if (!Array.isArray(thirdQualifiers) || thirdQualifiers.length !== 8) return;
-      const letters = thirdQualifiers.map(t => TOURNAMENT_DATA.teams[t]?.group).filter(Boolean);
-      if (letters.length !== 8 || new Set(letters).size !== 8) return;
-      if (!letters.every(groupIsFinal)) return;
-      const slotMap = (typeof resolveThirdPlaceSlots === "function") ? resolveThirdPlaceSlots(letters) : null;
-      if (!slotMap) return;
-      for (const [matchId, letter] of Object.entries(slotMap)) {
-        bestThirdSlots[matchId] = groupStandings[letter].standings[2];
+      const letters = Array.isArray(thirdQualifiers)
+        ? thirdQualifiers.map(t => TOURNAMENT_DATA.teams[t]?.group).filter(Boolean) : [];
+      if (letters.length === 8 && new Set(letters).size === 8 && letters.every(groupIsFinal)) {
+        const slotMap = (typeof resolveThirdPlaceSlots === "function") ? resolveThirdPlaceSlots(letters) : null;
+        if (slotMap) {
+          for (const [matchId, letter] of Object.entries(slotMap)) {
+            bestThirdSlots[matchId] = groupStandings[letter].standings[2];
+          }
+        }
+      }
+      for (const [matchId, team] of Object.entries(slotOverrides)) {
+        if (team) bestThirdSlots[matchId] = team;
       }
     }
 
@@ -737,17 +744,19 @@
       });
 
       try {
-        const [config, picks, results, standings, thirds] = await Promise.all([
+        const [config, picks, results, standings, thirds, overrides] = await Promise.all([
           getTournamentConfig(),
           getUserPicks(user),
           getAllResults(),
           getAllGroupStandings(),
           getThirdPlaceQualifiers(),
+          getBracketSlotOverrides(),
         ]);
 
         liveResults     = results || {};
         groupStandings  = standings || {};
         thirdQualifiers = thirds || null;
+        slotOverrides   = overrides || {};
 
         // Gate: Phase 1 must be locked first
         if (!config.phase1Locked) {
