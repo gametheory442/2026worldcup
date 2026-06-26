@@ -532,6 +532,49 @@
       letter-spacing: .03em;
     }
     .site-footer strong { color: rgba(255,255,255,.85); }
+
+    /* ── Read-only "actual bracket" view (standings tab) ── */
+    .ab-round-badge {
+      font-family: var(--font-head); font-size: .68rem; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: #fff; background: var(--green);
+      padding: .25rem .65rem; border-radius: var(--radius); white-space: nowrap;
+    }
+    .ab-round-badge.final  { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); }
+    .ab-round-badge.sf     { background: #7C3AED; }
+    .ab-round-badge.qf     { background: #2563EB; }
+    .ab-round-badge.r16    { background: #0891B2; }
+    .ab-round-badge.r32    { background: var(--green); }
+    .ab-round-badge.third  { background: #CD7F32; }
+    .ab-scroll { overflow-x: auto; padding-bottom: .75rem; -webkit-overflow-scrolling: touch; }
+    .ab-cols { display: flex; gap: 1rem; min-width: max-content; align-items: stretch; }
+    .ab-col { display: flex; flex-direction: column; justify-content: space-around; width: 200px; flex-shrink: 0; gap: .5rem; }
+    .ab-col-head {
+      font-family: var(--font-head); font-size: .64rem; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--green); text-align: center; padding: .3rem 0; margin-bottom: .2rem;
+      border-bottom: 1.5px solid var(--border);
+    }
+    .ab-final-col { justify-content: center; gap: 1.25rem; }
+    .ab-thirdplace-head { color: var(--muted); }
+    .ab-match {
+      background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius-lg);
+      padding: .6rem .7rem;
+    }
+    .ab-match.final { border: 2px solid var(--gold); background: linear-gradient(135deg, #FFFDF5, #FFF9E8); }
+    .ab-match-num { font-family: var(--font-head); font-size: .62rem; font-weight: 700; letter-spacing: .06em; color: var(--green); text-transform: uppercase; }
+    .ab-pick { display: flex; flex-direction: column; gap: .3rem; margin-top: .4rem; }
+    .ab-team {
+      display: flex; align-items: center; gap: .5rem; padding: .4rem .55rem;
+      border: 1.5px solid var(--border); border-radius: var(--radius); font-size: .78rem; font-weight: 500;
+    }
+    .ab-team .flag { font-size: .95rem; flex-shrink: 0; line-height: 1; }
+    .ab-team .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .ab-team.tbd { border-style: dashed; color: var(--muted); font-style: italic; }
+    .ab-team.winner { background: var(--green); border-color: var(--green-dark); color: #fff; font-weight: 700; }
+    .ab-team.loser { opacity: .55; }
+    .ab-vs { display: flex; align-items: center; gap: .4rem; margin: .02rem 0; }
+    .ab-vs::before, .ab-vs::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .ab-vs span { font-family: var(--font-head); font-size: .58rem; font-weight: 700; letter-spacing: .06em; color: var(--muted); }
+    @media (max-width: 640px) { .ab-col { width: 168px; } }
   </style>
 </head>
 <body>
@@ -707,6 +750,7 @@
       <div class="st-tab-bar">
         <button class="st-tab active" id="sttab-leaderboard" onclick="switchStTab('leaderboard')">🏆 Leaderboard</button>
         <button class="st-tab" id="sttab-groups" onclick="switchStTab('groups')">⚽ Group Standings</button>
+        <button class="st-tab" id="sttab-bracket" onclick="switchStTab('bracket')">🏆 Bracket</button>
       </div>
 
       <!-- ── Leaderboard Panel ── -->
@@ -767,6 +811,17 @@
           </div>
         </div>
         <div id="stGroupsNote" class="st-groups-note"></div>
+      </div>
+
+      <!-- ── Bracket Panel (read-only, actual tournament bracket) ── -->
+      <div id="stpanel-bracket" style="display:none">
+        <div id="stBracketContainer">
+          <div style="text-align:center;padding:3rem 1rem;color:var(--muted);">
+            <div style="font-size:2rem;margin-bottom:.5rem;">🏆</div>
+            <div>Loading bracket…</div>
+          </div>
+        </div>
+        <div id="stBracketNote" class="st-groups-note"></div>
       </div>
 
     </div><!-- /st-wrap -->
@@ -859,13 +914,14 @@
 </footer>
 
 <script src="data.js"></script>
+<script src="js/annex-c.js"></script>
 <script>
   // ── Tab switching (global, not module) ──
   function switchTab(name) {
     // If user is already logged in and clicks Picks, go straight to picks.html
     // (session check handled inline since we can't use module imports here)
     if (name === 'picks' && sessionStorage.getItem('wc2026_user')) {
-      window.location.href = 'picks.html';
+      window.location.href = 'bracket.html';
       return;
     }
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -899,6 +955,7 @@
     getTournamentConfig,
     calculateScores,
     getAllFifaStandings,
+    getBracketSlotOverrides,
   } from "./firebase.js";
 
   /* global TOURNAMENT_DATA, getTeamFlag, shortName */
@@ -906,7 +963,7 @@
   // ── If already logged in, redirect ──
   const existing = getSessionUser();
   if (existing) {
-    window.location.replace("picks.html");
+    window.location.replace("bracket.html");
   }
 
   // ── Load existing users for quick-pick chips ──
@@ -938,12 +995,15 @@
   }
 
   // ── Standings tab switching ──
-  let stGroupsLoaded = false;
+  let stGroupsLoaded  = false;
+  let stBracketLoaded = false;
   window.switchStTab = function(tab) {
     document.querySelectorAll(".st-tab").forEach(b => b.classList.toggle("active", b.id === "sttab-" + tab));
     document.getElementById("stpanel-leaderboard").style.display = tab === "leaderboard" ? "" : "none";
     document.getElementById("stpanel-groups").style.display      = tab === "groups" ? "" : "none";
+    document.getElementById("stpanel-bracket").style.display     = tab === "bracket" ? "" : "none";
     if (tab === "groups" && !stGroupsLoaded) loadStGroups();
+    if (tab === "bracket" && !stBracketLoaded) loadStBracket();
   };
 
   // ── Render podium ──
@@ -1145,6 +1205,166 @@
     </div>`;
   }
 
+  // ── Read-only "actual bracket" view ──
+  // Resolves descriptor slots (1st/2nd Group X, Best 3rd, W/L Match N) using
+  // *real* tournament data only — final group standings + admin-entered knockout
+  // results — never any individual player's picks.
+  const AB_MATCH_BY_ID = {};
+  (TOURNAMENT_DATA.knockoutMatches || []).forEach(m => { AB_MATCH_BY_ID[m.id] = m; });
+  const AB_ROUND_CONFIG = {
+    R32:   { label: "Round of 32",   cls: "r32" },
+    R16:   { label: "Round of 16",   cls: "r16" },
+    QF:    { label: "Quarterfinals", cls: "qf" },
+    SF:    { label: "Semifinals",    cls: "sf" },
+    "3RD": { label: "Third Place",   cls: "third" },
+    FINAL: { label: "The Final 🏆",  cls: "final", isFinal: true },
+  };
+  let abGroupStandings  = {};
+  let abThirdQualifiers = null;
+  let abBestThirdSlots  = {};
+  let abSlotOverrides   = {};
+  let abKoResults        = {};
+
+  function abGroupIsFinal(letter) {
+    const g = abGroupStandings?.[letter];
+    return !!(g && Array.isArray(g.standings) && g.standings.length === 4 && g.final !== false);
+  }
+
+  function abComputeBestThirdSlots() {
+    abBestThirdSlots = {};
+    const letters = Array.isArray(abThirdQualifiers)
+      ? abThirdQualifiers.map(t => TOURNAMENT_DATA.teams[t]?.group).filter(Boolean) : [];
+    if (letters.length === 8 && new Set(letters).size === 8 && letters.every(abGroupIsFinal)) {
+      const slotMap = (typeof resolveThirdPlaceSlots === "function") ? resolveThirdPlaceSlots(letters) : null;
+      if (slotMap) {
+        for (const [matchId, letter] of Object.entries(slotMap)) {
+          abBestThirdSlots[matchId] = abGroupStandings[letter].standings[2];
+        }
+      }
+    }
+    for (const [matchId, team] of Object.entries(abSlotOverrides)) {
+      if (team) abBestThirdSlots[matchId] = team;
+    }
+  }
+
+  function abResolveDesc(desc, matchId) {
+    if (!desc || desc === "TBD") return null;
+    let m;
+    if ((m = desc.match(/^1st Group ([A-L])$/))) return abGroupIsFinal(m[1]) ? abGroupStandings[m[1]].standings[0] : null;
+    if ((m = desc.match(/^2nd Group ([A-L])$/))) return abGroupIsFinal(m[1]) ? abGroupStandings[m[1]].standings[1] : null;
+    if (desc.startsWith("Best 3rd"))             return abBestThirdSlots[matchId] || null;
+    if ((m = desc.match(/^W Match (\d+)$/)))     return abKoResults["match_" + m[1]]?.winner || null;
+    if ((m = desc.match(/^L Match (\d+)$/))) {
+      const fid = "match_" + m[1];
+      const winner = abKoResults[fid]?.winner;
+      if (!winner) return null;
+      const t1 = abResolveTeamSlot(fid, 1), t2 = abResolveTeamSlot(fid, 2);
+      if (!t1 || !t2) return null;
+      return winner === t1 ? t2 : (winner === t2 ? t1 : null);
+    }
+    return null;
+  }
+
+  function abResolveTeamSlot(matchId, slotNum) {
+    const m = AB_MATCH_BY_ID[matchId];
+    if (!m) return null;
+    return abResolveDesc(slotNum === 1 ? m.team1Desc : m.team2Desc, matchId);
+  }
+
+  function abLeafOrder() {
+    const leaves = id => {
+      const feeders = (TOURNAMENT_DATA.knockoutMatches || []).filter(x => x.feedsMatch === id)
+        .sort((a, b) => a.matchNum - b.matchNum);
+      return feeders.length ? feeders.flatMap(f => leaves(f.id)) : [id];
+    };
+    return leaves("match_104");
+  }
+
+  function abIsDescriptor(str) {
+    if (!str) return true;
+    return str.startsWith("1st ") || str.startsWith("2nd ") || str.startsWith("W ") ||
+           str.startsWith("L ") || str.startsWith("Best 3rd") || str === "TBD";
+  }
+
+  function abRenderTeamRow(m, teamNum) {
+    const desc   = (teamNum === 1 ? m.team1Desc : m.team2Desc) || "TBD";
+    const team   = abResolveTeamSlot(m.id, teamNum);
+    if (!team) {
+      const hint = abIsDescriptor(desc) ? desc : "To Be Determined";
+      return `<div class="ab-team tbd">🏳️ <span class="name">${hint}</span></div>`;
+    }
+    const result   = abKoResults[m.id];
+    const isWinner = result && result.winner === team;
+    const isLoser  = result && result.winner && result.winner !== team;
+    const flag     = (typeof getTeamFlag === "function" && getTeamFlag(team)) || "🏳️";
+    const name     = (typeof shortName === "function" && shortName(team)) || team;
+    return `<div class="ab-team ${isWinner ? 'winner' : ''} ${isLoser ? 'loser' : ''}">
+      <span class="flag">${flag}</span><span class="name">${name}</span>
+    </div>`;
+  }
+
+  function abRenderMatchCard(m, cfg) {
+    return `
+      <div class="ab-match ${cfg.isFinal ? 'final' : ''}">
+        <div class="ab-match-num">Match ${m.matchNum}</div>
+        <div class="ab-pick">
+          ${abRenderTeamRow(m, 1)}
+          <div class="ab-vs"><span>vs</span></div>
+          ${abRenderTeamRow(m, 2)}
+        </div>
+      </div>`;
+  }
+
+  function renderActualBracket() {
+    const order = abLeafOrder();
+    const idxOf = {}; order.forEach((id, i) => idxOf[id] = i);
+    const minLeaf = id => {
+      const feeders = (TOURNAMENT_DATA.knockoutMatches || []).filter(x => x.feedsMatch === id);
+      return feeders.length ? Math.min(...feeders.map(f => minLeaf(f.id))) : idxOf[id];
+    };
+    const cols = [["R32","Round of 32"],["R16","Round of 16"],["QF","Quarterfinals"],["SF","Semifinals"]];
+
+    let html = `<div class="ab-scroll"><div class="ab-cols">`;
+    cols.forEach(([round, label]) => {
+      const cfg = AB_ROUND_CONFIG[round];
+      const matches = (TOURNAMENT_DATA.knockoutMatches || []).filter(m => m.round === round)
+        .sort((a, b) => minLeaf(a.id) - minLeaf(b.id));
+      html += `<div class="ab-col"><div class="ab-col-head">${label}</div>` +
+        matches.map(m => abRenderMatchCard(m, cfg)).join("") + `</div>`;
+    });
+    html += `<div class="ab-col ab-final-col">
+      <div><div class="ab-col-head">The Final 🏆</div>${abRenderMatchCard(AB_MATCH_BY_ID["match_104"], AB_ROUND_CONFIG.FINAL)}</div>
+      <div><div class="ab-col-head ab-thirdplace-head">Third Place</div>${abRenderMatchCard(AB_MATCH_BY_ID["match_103"], AB_ROUND_CONFIG["3RD"])}</div>
+    </div>`;
+    html += `</div></div>`;
+
+    document.getElementById("stBracketContainer").innerHTML = html;
+  }
+
+  async function loadStBracket() {
+    try {
+      const [standings, thirds, overrides, koResults] = await Promise.all([
+        getAllGroupStandings(), getThirdPlaceQualifiers(), getBracketSlotOverrides(), getAllResults(),
+      ]);
+      abGroupStandings  = standings || {};
+      abThirdQualifiers = thirds || null;
+      abSlotOverrides   = overrides || {};
+      abKoResults       = koResults || {};
+      abComputeBestThirdSlots();
+      renderActualBracket();
+      document.getElementById("stBracketNote").textContent =
+        "Shows the real tournament bracket — teams fill in as group standings are finalized and results are entered.";
+      stBracketLoaded = true;
+    } catch (err) {
+      console.error("Failed to load bracket:", err);
+      document.getElementById("stBracketContainer").innerHTML =
+        `<div style="text-align:center;padding:2.5rem;color:var(--muted);">
+          <div style="font-size:1.5rem;margin-bottom:.4rem">⚠️</div>
+          <div style="font-size:.85rem">Failed to load bracket. Try again later.</div>
+         </div>`;
+    }
+  }
+
   loadUsers();
   loadStandings();
 
@@ -1164,7 +1384,7 @@
       const exists = await userExists(raw);
       if (!exists) await createUser(raw);
       setSessionUser(raw);
-      window.location.href = "picks.html";
+      window.location.href = "bracket.html";
     } catch (err) {
       console.error("Login error:", err);
       loginBtn.disabled    = false;
