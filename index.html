@@ -546,12 +546,41 @@
     .ab-round-badge.r32    { background: var(--green); }
     .ab-round-badge.third  { background: #CD7F32; }
     .ab-scroll { overflow-x: auto; padding-bottom: .75rem; -webkit-overflow-scrolling: touch; }
-    .ab-cols { display: flex; gap: 1rem; min-width: max-content; align-items: stretch; }
-    .ab-col { display: flex; flex-direction: column; justify-content: space-around; width: 200px; flex-shrink: 0; gap: .5rem; }
+    .ab-cols { display: flex; gap: 1.75rem; min-width: max-content; align-items: stretch; }
+    .ab-col { display: flex; flex-direction: column; width: 200px; flex-shrink: 0; }
     .ab-col-head {
+      flex: 0 0 auto;
       font-family: var(--font-head); font-size: .64rem; font-weight: 700; letter-spacing: .06em;
       text-transform: uppercase; color: var(--green); text-align: center; padding: .3rem 0; margin-bottom: .2rem;
       border-bottom: 1.5px solid var(--border);
+    }
+    /* Body holds the matches; each slot grows proportionally to how many
+       round-of-32 matches sit beneath it, and centers its card — so every
+       downstream match lands exactly at the midpoint of its two feeders. */
+    .ab-col-body { flex: 1 1 auto; display: flex; flex-direction: column; }
+    /* flex: 1 0 auto — each slot grows to share the column height equally but
+       never shrinks below its card, so the 16-match Round of 32 column sets the
+       overall height and the shorter columns stretch to match it. */
+    .ab-slot {
+      flex: 1 0 auto; display: flex; flex-direction: column; justify-content: center;
+      padding: .3rem 0; position: relative;
+    }
+    /* Connector lines. A "feeder" draws a horizontal stub out to mid-gap. A
+       "child" is centred between its two feeders, so a vertical bar of half its
+       slot height (top:25%→75%) has endpoints landing exactly on the two feeder
+       stubs; a short lead-in joins that bar to the child card. */
+    .ab-slot.feeder::after {
+      content: ''; position: absolute; top: 50%; right: -.875rem; width: .875rem;
+      border-top: 1.5px solid var(--border);
+    }
+    .ab-slot.child::before {
+      content: ''; position: absolute; left: -.875rem; top: 25%; height: 50%;
+      border-left: 1.5px solid var(--border);
+    }
+    .ab-slot.child .ab-match { position: relative; }
+    .ab-slot.child .ab-match::before {
+      content: ''; position: absolute; top: 50%; left: -.875rem; width: .875rem;
+      border-top: 1.5px solid var(--border);
     }
     .ab-final-col { justify-content: center; gap: 1.25rem; }
     .ab-thirdplace-head { color: var(--muted); }
@@ -1322,15 +1351,25 @@
       const feeders = (TOURNAMENT_DATA.knockoutMatches || []).filter(x => x.feedsMatch === id);
       return feeders.length ? Math.min(...feeders.map(f => minLeaf(f.id))) : idxOf[id];
     };
-    const cols = [["R32","Round of 32"],["R16","Round of 16"],["QF","Quarterfinals"],["SF","Semifinals"]];
+    // round → connector role: "feeder" feeds the next column, "child" is fed by
+    // the previous one. SF is a child of QF but its winner goes to the Final
+    // (a separate, unconnected column), so it is not marked a feeder.
+    const cols = [
+      ["R32","Round of 32",   "feeder"],
+      ["R16","Round of 16",   "feeder child"],
+      ["QF", "Quarterfinals", "feeder child"],
+      ["SF", "Semifinals",    "child"],
+    ];
 
     let html = `<div class="ab-scroll"><div class="ab-cols">`;
-    cols.forEach(([round, label]) => {
+    cols.forEach(([round, label, role]) => {
       const cfg = AB_ROUND_CONFIG[round];
       const matches = (TOURNAMENT_DATA.knockoutMatches || []).filter(m => m.round === round)
         .sort((a, b) => minLeaf(a.id) - minLeaf(b.id));
       html += `<div class="ab-col"><div class="ab-col-head">${label}</div>` +
-        matches.map(m => abRenderMatchCard(m, cfg)).join("") + `</div>`;
+        `<div class="ab-col-body">` +
+        matches.map(m => `<div class="ab-slot ${role}">${abRenderMatchCard(m, cfg)}</div>`).join("") +
+        `</div></div>`;
     });
     html += `<div class="ab-col ab-final-col">
       <div><div class="ab-col-head">The Final 🏆</div>${abRenderMatchCard(AB_MATCH_BY_ID["match_104"], AB_ROUND_CONFIG.FINAL)}</div>

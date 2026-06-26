@@ -203,12 +203,35 @@
 
     /* Visual bracket view */
     .bv-scroll { overflow-x: auto; padding-bottom: .75rem; -webkit-overflow-scrolling: touch; }
-    .bv-cols { display: flex; gap: 1rem; min-width: max-content; align-items: stretch; }
-    .bv-col { display: flex; flex-direction: column; justify-content: space-around; width: 215px; flex-shrink: 0; gap: .5rem; }
+    .bv-cols { display: flex; gap: 1.75rem; min-width: max-content; align-items: stretch; }
+    .bv-col { display: flex; flex-direction: column; width: 215px; flex-shrink: 0; }
     .bv-col-head {
+      flex: 0 0 auto;
       font-family: var(--font-head); font-size: .66rem; font-weight: 700; letter-spacing: .07em;
       text-transform: uppercase; color: var(--green); text-align: center; padding: .3rem 0; margin-bottom: .25rem;
-      border-bottom: 1.5px solid var(--border); position: sticky; top: 0;
+      border-bottom: 1.5px solid var(--border);
+    }
+    /* Each slot grows to share the column height equally but never shrinks below
+       its card, so the 16-match Round of 32 column sets the overall height and
+       the shorter columns stretch to match — placing every downstream match at
+       the exact midpoint of the two matches that feed it. */
+    .bv-col-body { flex: 1 1 auto; display: flex; flex-direction: column; }
+    .bv-slot {
+      flex: 1 0 auto; display: flex; flex-direction: column; justify-content: center;
+      padding: .3rem 0; position: relative;
+    }
+    .bv-slot.feeder::after {
+      content: ''; position: absolute; top: 50%; right: -.875rem; width: .875rem;
+      border-top: 1.5px solid var(--border);
+    }
+    .bv-slot.child::before {
+      content: ''; position: absolute; left: -.875rem; top: 25%; height: 50%;
+      border-left: 1.5px solid var(--border);
+    }
+    .bv-slot.child .bracket-match { position: relative; }
+    .bv-slot.child .bracket-match::before {
+      content: ''; position: absolute; top: 50%; left: -.875rem; width: .875rem;
+      border-top: 1.5px solid var(--border);
     }
     .bv-col .bracket-match { padding: .6rem .7rem; }
     .bv-col .bracket-match-header { margin-bottom: .45rem; }
@@ -672,14 +695,21 @@
         return feeders.length ? Math.min(...feeders.map(f => minLeaf(f.id))) : idxOf[id];
       };
 
-      const cols = [["R32","Round of 32"],["R16","Round of 16"],["QF","Quarterfinals"],["SF","Semifinals"]];
+      const cols = [
+        ["R32","Round of 32",   "feeder"],
+        ["R16","Round of 16",   "feeder child"],
+        ["QF", "Quarterfinals", "feeder child"],
+        ["SF", "Semifinals",    "child"],
+      ];
       let html = `<div class="bv-scroll"><div class="bv-cols">`;
-      cols.forEach(([round, label]) => {
+      cols.forEach(([round, label, role]) => {
         const cfg = ROUND_CONFIG[round];
         const matches = TOURNAMENT_DATA.knockoutMatches.filter(m => m.round === round)
           .sort((a, b) => minLeaf(a.id) - minLeaf(b.id));
         html += `<div class="bv-col"><div class="bv-col-head">${label}</div>` +
-          matches.map(m => renderMatchCard(m, cfg)).join("") + `</div>`;
+          `<div class="bv-col-body">` +
+          matches.map(m => `<div class="bv-slot ${role}">${renderMatchCard(m, cfg)}</div>`).join("") +
+          `</div></div>`;
       });
       html += `<div class="bv-col bv-final-col">
         <div><div class="bv-col-head">The Final 🏆</div>${renderMatchCard(MATCH_BY_ID["match_104"], ROUND_CONFIG.FINAL)}</div>
