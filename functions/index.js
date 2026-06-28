@@ -3,6 +3,7 @@ const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const fetch = require("node-fetch");
 const cors = require("cors");
+const { resolveThirdPlaceSlots } = require("./annex-c");
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -211,6 +212,59 @@ const KNOCKOUT_MATCHES = [
   { id: "match_104", matchNum: 104, round: "FINAL", date: "2026-07-19" },
 ];
 
+// Static knockout feeder graph (mirrors data.js team1Desc/team2Desc). Used to
+// resolve each match's two participants from actual results so completed ESPN
+// games can be mapped by their team pair — independent of how many games share
+// a date. Descriptors: "1st/2nd Group X", "Best 3rd …", "W/L Match N".
+const KNOCKOUT_FEEDERS = {
+  match_73:  { t1: "2nd Group A",  t2: "2nd Group B" },
+  match_74:  { t1: "1st Group E",  t2: "Best 3rd A/B/C/D/F" },
+  match_75:  { t1: "1st Group F",  t2: "2nd Group C" },
+  match_76:  { t1: "1st Group C",  t2: "2nd Group F" },
+  match_77:  { t1: "1st Group I",  t2: "Best 3rd C/D/F/G/H" },
+  match_78:  { t1: "2nd Group E",  t2: "2nd Group I" },
+  match_79:  { t1: "1st Group A",  t2: "Best 3rd C/E/F/H/I" },
+  match_80:  { t1: "1st Group L",  t2: "Best 3rd E/H/I/J/K" },
+  match_81:  { t1: "1st Group D",  t2: "Best 3rd B/E/F/I/J" },
+  match_82:  { t1: "1st Group G",  t2: "Best 3rd A/E/H/I/J" },
+  match_83:  { t1: "2nd Group K",  t2: "2nd Group L" },
+  match_84:  { t1: "1st Group H",  t2: "2nd Group J" },
+  match_85:  { t1: "1st Group B",  t2: "Best 3rd E/F/G/I/J" },
+  match_86:  { t1: "1st Group J",  t2: "2nd Group H" },
+  match_87:  { t1: "1st Group K",  t2: "Best 3rd D/E/I/J/L" },
+  match_88:  { t1: "2nd Group D",  t2: "2nd Group G" },
+  match_89:  { t1: "W Match 74",   t2: "W Match 77" },
+  match_90:  { t1: "W Match 73",   t2: "W Match 75" },
+  match_91:  { t1: "W Match 76",   t2: "W Match 78" },
+  match_92:  { t1: "W Match 79",   t2: "W Match 80" },
+  match_93:  { t1: "W Match 83",   t2: "W Match 84" },
+  match_94:  { t1: "W Match 81",   t2: "W Match 82" },
+  match_95:  { t1: "W Match 86",   t2: "W Match 88" },
+  match_96:  { t1: "W Match 85",   t2: "W Match 87" },
+  match_97:  { t1: "W Match 89",   t2: "W Match 90" },
+  match_98:  { t1: "W Match 93",   t2: "W Match 94" },
+  match_99:  { t1: "W Match 91",   t2: "W Match 92" },
+  match_100: { t1: "W Match 95",   t2: "W Match 96" },
+  match_101: { t1: "W Match 97",   t2: "W Match 98" },
+  match_102: { t1: "W Match 99",   t2: "W Match 100" },
+  match_103: { t1: "L Match 101",  t2: "L Match 102" },
+  match_104: { t1: "W Match 101",  t2: "W Match 102" },
+};
+
+// First knockout date — used to tell knockout games apart from group games by
+// date rather than by team pair (two group-stage opponents can legitimately
+// meet again in a late knockout round, so a pair-based filter is wrong).
+const KNOCKOUT_START = "2026-06-28";
+
+// Canonical team name (as used in data.js / picks / standings) → group letter.
+const CANONICAL_TO_GROUP = {};
+for (const [letter, keys] of Object.entries(GROUP_TEAMS)) {
+  for (const key of keys) {
+    const name = KEY_TO_CANONICAL[key];
+    if (name) CANONICAL_TO_GROUP[name] = letter;
+  }
+}
+
 // ── Match lookup helpers ──
 
 function buildMatchLookup() {
@@ -227,12 +281,6 @@ const MATCH_LOOKUP = buildMatchLookup();
 function findGroupMatchId(teamKey1, teamKey2) {
   const key = [teamKey1, teamKey2].sort().join("|");
   return MATCH_LOOKUP[key] || null;
-}
-
-function findKnockoutMatchId(dateStr) {
-  const sameDateMatches = KNOCKOUT_MATCHES.filter(m => m.date === dateStr);
-  if (sameDateMatches.length === 1) return sameDateMatches[0].id;
-  return null;
 }
 
 function resolveTeamKey(espnName) {
@@ -374,22 +422,17 @@ async function doSyncResults() {
         continue;
       }
 
+      // Group matches are mapped by their team pair here. Knockout matches are
+      // handled by doSyncKnockout() — it resolves each bracket slot to a real
+      // team first, then maps games by team pair (date mapping fails when
+      // several knockout games share a day).
       const rawGroupId = findGroupMatchId(homeKey, awayKey);
-      let matchId;
-      let phase;
-
-      if (rawGroupId) {
-        matchId = `match_${rawGroupId}`;
-        phase = "group";
-      } else {
-        matchId = findKnockoutMatchId(matchDate);
-        phase = "knockout";
-      }
-
-      if (!matchId) {
+      if (!rawGroupId) {
         summary.skipped += 1;
         continue;
       }
+      const matchId = `match_${rawGroupId}`;
+      const phase = "group";
 
       const docData = {
         winner,
@@ -558,6 +601,188 @@ async function doSyncStandings() {
   return { updated, rankingsUpdated };
 }
 
+// ── Knockout bracket sync ──────────────────────────────────
+// Resolves each knockout match's two participants from the *actual* results
+// (final group standings + Annex C best-third + earlier-round winners), then
+// maps completed ESPN knockout games to the right match by their team pair.
+// Winners are stored as canonical team names so existing player picks score
+// correctly. This is date-independent, so multi-game days resolve fine.
+
+function groupIsFinal(g) {
+  return !!(g && Array.isArray(g.standings) && g.standings.length === 4 && g.final !== false);
+}
+
+// Mirror of the frontend computeBestThirdSlots: map each "Best 3rd" R32 slot to
+// the real team via the entered qualifiers + Annex C, then let any admin
+// override win. Returns { match_79: "Brazil", ... } (canonical names).
+function computeBestThirdSlots(thirdQualifiers, groupStandings, slotOverrides) {
+  const best = {};
+  const letters = Array.isArray(thirdQualifiers)
+    ? thirdQualifiers.map(t => CANONICAL_TO_GROUP[t]).filter(Boolean) : [];
+  if (letters.length === 8 && new Set(letters).size === 8 && letters.every(L => groupIsFinal(groupStandings[L]))) {
+    const slotMap = resolveThirdPlaceSlots(letters);
+    if (slotMap) {
+      for (const [matchId, letter] of Object.entries(slotMap)) {
+        best[matchId] = groupStandings[letter].standings[2];
+      }
+    }
+  }
+  for (const [matchId, team] of Object.entries(slotOverrides || {})) {
+    if (team) best[matchId] = team;
+  }
+  return best;
+}
+
+// Resolve a single descriptor to a canonical team name, or null if not yet
+// determined. ctx = { groupStandings, bestThird, koWinner }.
+function resolveKnockoutDesc(desc, matchId, ctx) {
+  if (!desc || desc === "TBD") return null;
+  let m;
+  if ((m = desc.match(/^1st Group ([A-L])$/))) return groupIsFinal(ctx.groupStandings[m[1]]) ? ctx.groupStandings[m[1]].standings[0] : null;
+  if ((m = desc.match(/^2nd Group ([A-L])$/))) return groupIsFinal(ctx.groupStandings[m[1]]) ? ctx.groupStandings[m[1]].standings[1] : null;
+  if (desc.startsWith("Best 3rd")) return ctx.bestThird[matchId] || null;
+  if ((m = desc.match(/^W Match (\d+)$/))) return ctx.koWinner["match_" + m[1]] || null;
+  if ((m = desc.match(/^L Match (\d+)$/))) {
+    const fid = "match_" + m[1];
+    const w = ctx.koWinner[fid];
+    const t1 = resolveKnockoutSlot(fid, 1, ctx);
+    const t2 = resolveKnockoutSlot(fid, 2, ctx);
+    if (!w || !t1 || !t2) return null;
+    return w === t1 ? t2 : (w === t2 ? t1 : null);
+  }
+  return null;
+}
+
+function resolveKnockoutSlot(matchId, slotNum, ctx) {
+  const f = KNOCKOUT_FEEDERS[matchId];
+  if (!f) return null;
+  return resolveKnockoutDesc(slotNum === 1 ? f.t1 : f.t2, matchId, ctx);
+}
+
+async function doSyncKnockout() {
+  const summary = { synced: 0, skipped: 0, errors: [] };
+
+  // 1. Read the results collection: group standings, best-third inputs, and any
+  //    knockout winners already stored (manual or from a previous run).
+  const resultsSnap = await db.collection("results").get();
+  const groupStandings = {};   // letter → { standings:[4 names], final }
+  const storedWinner = {};     // match_id → winner already stored
+  const storedSource = {};     // match_id → source of existing knockout doc
+  let thirdQualifiers = null;
+  let slotOverrides = {};
+
+  resultsSnap.docs.forEach(d => {
+    const data = d.data();
+    let m;
+    if ((m = d.id.match(/^group_([A-L])$/))) {
+      groupStandings[m[1]] = { standings: data.standings || [], final: data.final };
+    } else if (d.id === "third_place_qualifiers") {
+      thirdQualifiers = Array.isArray(data.teams) ? data.teams : null;
+    } else if (d.id === "bracket_overrides") {
+      slotOverrides = data.slots || {};
+    } else if ((m = d.id.match(/^match_(\d+)$/)) && Number(m[1]) >= 73) {
+      storedWinner[d.id] = data.winner || null;
+      storedSource[d.id] = data.source || null;
+    }
+  });
+
+  const bestThird = computeBestThirdSlots(thirdQualifiers, groupStandings, slotOverrides);
+  // koWinner starts from stored winners and grows as we assign this run's
+  // results, so an earlier-round win can feed a later-round participant in the
+  // same pass.
+  const ctx = { groupStandings, bestThird, koWinner: { ...storedWinner } };
+
+  // 2. Parse completed ESPN games and key the knockout ones by their team pair.
+  const events = await fetchAllESPNEvents();
+  const espnByPair = {}; // "TeamA|TeamB" (sorted canonical) → parsed game
+  for (const event of events) {
+    try {
+      const match = parseESPNEvent(event);
+      if (!match) continue;
+      const { homeKey, awayKey, winner } = match;
+      if (!homeKey || !awayKey || !winner || winner === "draw") continue;
+      // Only knockout-stage games (by date). Group games are handled elsewhere;
+      // filtering by date (not by team pair) lets a same-group knockout rematch
+      // still map correctly.
+      if (!match.matchDate || match.matchDate < KNOCKOUT_START) continue;
+      const homeName = KEY_TO_CANONICAL[homeKey];
+      const awayName = KEY_TO_CANONICAL[awayKey];
+      const winnerName = KEY_TO_CANONICAL[winner];
+      if (!homeName || !awayName || !winnerName) {
+        console.warn(`Knockout: unmapped team key (${homeKey}/${awayKey})`);
+        continue;
+      }
+      const pairKey = [homeName, awayName].sort().join("|");
+      espnByPair[pairKey] = {
+        homeName, awayName, winnerName,
+        homeGoals: match.homeGoals, awayGoals: match.awayGoals,
+        isPenalty: match.isPenalty, isAET: match.isAET,
+      };
+    } catch (err) {
+      summary.errors.push(err?.message || String(err));
+    }
+  }
+
+  // 3. Iterate the bracket: whenever both participants of an unassigned match
+  //    are known, look for a completed ESPN game with that exact team pair.
+  const batch = db.batch();
+  let batchCount = 0;
+  const assigned = new Set();
+  let progress = true;
+  let passes = 0;
+  while (progress && passes < 8) {
+    progress = false;
+    passes++;
+    for (const km of KNOCKOUT_MATCHES) {
+      if (assigned.has(km.id)) continue;
+      // Never overwrite a result the admin set by hand.
+      if (storedSource[km.id] === "manual") { assigned.add(km.id); continue; }
+
+      const t1 = resolveKnockoutSlot(km.id, 1, ctx);
+      const t2 = resolveKnockoutSlot(km.id, 2, ctx);
+      if (!t1 || !t2) continue;
+
+      const game = espnByPair[[t1, t2].sort().join("|")];
+      if (!game) continue;
+
+      if (game.winnerName !== t1 && game.winnerName !== t2) {
+        summary.errors.push(`${km.id}: ESPN winner "${game.winnerName}" is not a participant (${t1} vs ${t2})`);
+        assigned.add(km.id);
+        continue;
+      }
+
+      assigned.add(km.id);
+      ctx.koWinner[km.id] = game.winnerName; // unlock downstream resolution
+      progress = true;
+
+      // Skip the write if the stored winner already matches.
+      if (storedWinner[km.id] === game.winnerName) {
+        summary.skipped += 1;
+        continue;
+      }
+
+      batch.set(db.collection("results").doc(km.id), {
+        winner: game.winnerName,
+        phase: "knockout",
+        homeTeam: game.homeName,
+        awayTeam: game.awayName,
+        homeGoals: game.homeGoals ?? null,
+        awayGoals: game.awayGoals ?? null,
+        isPenalty: game.isPenalty || false,
+        isAET: game.isAET || false,
+        enteredAt: admin.firestore.FieldValue.serverTimestamp(),
+        source: "espn",
+      }, { merge: true });
+      batchCount++;
+      summary.synced += 1;
+      if (batchCount >= 450) { await batch.commit(); batchCount = 0; }
+    }
+  }
+
+  if (batchCount > 0) await batch.commit();
+  return summary;
+}
+
 // ── Scheduled function: every 10 min, 9am–midnight PT ──
 
 exports.syncResultsScheduled = onSchedule(
@@ -570,7 +795,8 @@ exports.syncResultsScheduled = onSchedule(
   async () => {
     const resultsSummary = await doSyncResults();
     const standingsSummary = await doSyncStandings();
-    console.log("Scheduled sync complete:", { results: resultsSummary, standings: standingsSummary });
+    const knockoutSummary = await doSyncKnockout();
+    console.log("Scheduled sync complete:", { results: resultsSummary, standings: standingsSummary, knockout: knockoutSummary });
   }
 );
 
@@ -600,10 +826,12 @@ exports.syncResultsHttp = onRequest(
       try {
         const resultsSummary = await doSyncResults();
         const standingsSummary = await doSyncStandings();
+        const knockoutSummary = await doSyncKnockout();
         res.json({
           success: true,
           results: resultsSummary,
           standings: standingsSummary,
+          knockout: knockoutSummary,
         });
       } catch (err) {
         console.error("HTTP sync error:", err);
@@ -612,3 +840,15 @@ exports.syncResultsHttp = onRequest(
     });
   }
 );
+
+// Internal helpers exposed for offline tests (not used in production paths).
+exports._test = {
+  doSyncKnockout,
+  computeBestThirdSlots,
+  resolveKnockoutSlot,
+  groupIsFinal,
+  KNOCKOUT_FEEDERS,
+  CANONICAL_TO_GROUP,
+  KEY_TO_CANONICAL,
+  GROUP_TEAMS,
+};
