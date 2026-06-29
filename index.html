@@ -638,6 +638,10 @@
     .pd-section-head { font-family: var(--font-head); font-size: .82rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--green); margin-bottom: .75rem; }
     .pd-empty { font-size: .82rem; color: var(--muted); }
 
+    .pd-champ-label { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; font-size: .72rem; font-weight: 600; color: var(--muted); margin: .9rem 0 .35rem; }
+    .pd-section-head + .pd-champ-label { margin-top: 0; }
+    .pd-bonus { font-size: .66rem; font-weight: 700; color: var(--gold-dark); background: var(--gold-light); border: 1px solid var(--gold); padding: .12rem .45rem; border-radius: 999px; }
+
     .pd-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: .7rem; }
     .pd-group-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
     .pd-group-head { display: flex; justify-content: space-between; align-items: center; background: var(--bg); padding: .4rem .6rem; font-family: var(--font-head); font-size: .74rem; font-weight: 700; color: var(--dark); }
@@ -1494,23 +1498,36 @@
         </div>
       </div>`;
 
-    // ── Champion pick ──
-    const wp = pd.winnerPick;
-    if (wp) {
-      const finalWinner = stKoResults["match_104"]?.winner || null;
-      let st = "pending", label = "Awaiting the final";
-      if (finalWinner) {
-        if (finalWinner === wp) { st = "correct"; label = "Lifted the trophy!"; }
-        else { st = "wrong"; label = `Did not win · ${shortName(finalWinner)} did`; }
+    // ── Champion picks ──
+    // Two distinct picks: the pre-tournament champion (worth a one-time bonus)
+    // and the team they currently have winning the final in their bracket.
+    const wp          = pd.winnerPick;                                            // pre-tournament bonus pick
+    const koFinalPick = (pd.knockoutPicks && pd.knockoutPicks.match_104) || null; // bracket final winner
+    const finalWinner = stKoResults["match_104"]?.winner || null;
+    const champBonus  = TOURNAMENT_DATA.scoring.correctTournamentWinner;
+
+    function champStatus(team) {
+      if (!team || !finalWinner) return { st: "pending", label: "Awaiting the final" };
+      if (finalWinner === team)  return { st: "correct", label: "Lifted the trophy!" };
+      return { st: "wrong", label: `${shortName(finalWinner)} won instead` };
+    }
+    function champRow(team) {
+      const { st, label } = champStatus(team);
+      return `<div class="pd-ko-row ${st}">
+        <span class="pd-team"><span class="flag">${getTeamFlag(team)}</span>${shortName(team)}</span>
+        <span class="pd-status ${st}">${statusIcon(st)} ${label}</span>
+      </div>`;
+    }
+
+    if (wp || koFinalPick) {
+      html += `<div class="pd-section"><div class="pd-section-head">🏆 Champion Picks</div>`;
+      if (wp) {
+        html += `<div class="pd-champ-label">Pre-tournament pick <span class="pd-bonus">+${champBonus} bonus if correct</span></div>` + champRow(wp);
       }
-      html += `
-        <div class="pd-section">
-          <div class="pd-section-head">🏆 Champion Pick</div>
-          <div class="pd-ko-row ${st}">
-            <span class="pd-team"><span class="flag">${getTeamFlag(wp)}</span>${shortName(wp)}</span>
-            <span class="pd-status ${st}">${statusIcon(st)} ${label}</span>
-          </div>
-        </div>`;
+      if (koFinalPick) {
+        html += `<div class="pd-champ-label">Bracket final winner</div>` + champRow(koFinalPick);
+      }
+      html += `</div>`;
     }
 
     // ── Group picks ──
