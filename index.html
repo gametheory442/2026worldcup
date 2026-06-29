@@ -309,6 +309,13 @@
     .st-score.zero { color: var(--muted); }
     .st-bd { font-family: var(--font-head); font-size: .8rem; font-weight: 600; color: var(--text); }
     .st-bd.zero { color: #CBD5E1; }
+    .st-max { font-family: var(--font-head); font-size: .92rem; font-weight: 700; color: var(--muted); }
+    /* Champion pick cell */
+    .st-table th, .st-table td { white-space: nowrap; }
+    .st-wp { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; font-weight: 600; color: var(--dark); }
+    .st-wp .flag { font-family: var(--font-emoji); }
+    .st-wp.elim { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; border-radius: 8px; padding: .15rem .5rem; }
+    .st-wp.empty { color: #CBD5E1; }
     .st-footer { display: flex; align-items: center; justify-content: flex-end; padding: .55rem 1.1rem; border-top: 1px solid var(--border); background: var(--bg); }
     .st-updated { font-size: .68rem; color: var(--muted); }
     .st-pick-notice { display: flex; align-items: center; gap: .65rem; padding: .7rem 1rem; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius); font-size: .82rem; color: #92400E; margin-bottom: 1rem; }
@@ -334,7 +341,7 @@
 
     @media (max-width: 600px) {
       .st-groups-grid { grid-template-columns: 1fr; }
-      .st-hide-xs { display: none; }
+      /* Keep all leaderboard columns; the wrapper scrolls horizontally instead. */
     }
 
     @media (max-width: 480px) {
@@ -817,9 +824,10 @@
                   <th style="width:36px">#</th>
                   <th>Player</th>
                   <th class="right">Score</th>
-                  <th class="right st-hide-xs">Groups</th>
-                  <th class="right st-hide-xs">Knockout</th>
-                  <th class="right st-hide-xs">🏆</th>
+                  <th class="right">Max</th>
+                  <th class="right">Groups</th>
+                  <th class="right">Knockout</th>
+                  <th>🏆 Champion</th>
                 </tr>
               </thead>
               <tbody id="stBody"></tbody>
@@ -965,7 +973,7 @@
   (function initTab() {
     const hash = window.location.hash.replace('#', '');
     const valid = ['rules', 'standings', 'picks'];
-    const tab = valid.includes(hash) ? hash : 'picks';
+    const tab = valid.includes(hash) ? hash : 'standings';
     // Use setTimeout to let the DOM settle before switching
     setTimeout(() => switchTab(tab), 0);
   })();
@@ -1087,9 +1095,17 @@
       const rankBadge = rank <= 3
         ? `<span class="st-rank st-rank-${rank}">${rank}</span>`
         : `<span class="st-rank st-rank-n">${rank}</span>`;
-      const bonusCell = bd.winner > 0
-        ? `<span class="st-bd">${bd.winner}</span>`
-        : `<span class="st-bd zero">—</span>`;
+      // Champion pick: show the picked team's name (no points awarded until the
+      // tournament ends), with a red badge if that team has been eliminated.
+      let champCell;
+      if (phase1Locked && wp) {
+        const flag = (TOURNAMENT_DATA.teams[wp]?.flag || "🏳️");
+        const name = (typeof shortName === "function" && shortName(wp)) || wp;
+        champCell = `<span class="st-wp ${entry.wpEliminated ? 'elim' : ''}"><span class="flag">${flag}</span>${name}</span>`;
+      } else {
+        champCell = `<span class="st-wp empty">—</span>`;
+      }
+      const maxScore = (typeof entry.maxScore === "number") ? entry.maxScore : entry.score;
       return `
         <tr>
           <td style="padding-left:.75rem">${rankBadge}</td>
@@ -1100,9 +1116,10 @@
             </div>
           </td>
           <td class="right"><span class="st-score ${entry.score === 0 ? 'zero' : ''}">${entry.score}</span></td>
-          <td class="right st-hide-xs"><span class="st-bd ${!bd.groupStage ? 'zero' : ''}">${bd.groupStage || 0}</span></td>
-          <td class="right st-hide-xs"><span class="st-bd ${!bd.knockout ? 'zero' : ''}">${bd.knockout || 0}</span></td>
-          <td class="right st-hide-xs">${bonusCell}</td>
+          <td class="right"><span class="st-max">${maxScore}</span></td>
+          <td class="right"><span class="st-bd ${!bd.groupStage ? 'zero' : ''}">${bd.groupStage || 0}</span></td>
+          <td class="right"><span class="st-bd ${!bd.knockout ? 'zero' : ''}">${bd.knockout || 0}</span></td>
+          <td>${champCell}</td>
         </tr>`;
     }).join("");
 
@@ -1111,30 +1128,95 @@
       `Updated ${now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
   }
 
+  // ── Eliminated-team detection (uses the shared bracket resolver) ──
+  // Returns { lostInKO:Set, koTeams:Set, r32Full:bool }. A team is eliminated
+  // if it lost a knockout match, or — once the R32 is fully resolved — if it
+  // never reached the knockout stage at all (group-stage elimination).
+  function computeEliminatedTeams() {
+    const lostInKO = new Set();
+    const koTeams  = new Set();
+    (TOURNAMENT_DATA.knockoutMatches || []).forEach(m => {
+      const t1 = abResolveTeamSlot(m.id, 1), t2 = abResolveTeamSlot(m.id, 2);
+      if (m.round === "R32") { if (t1) koTeams.add(t1); if (t2) koTeams.add(t2); }
+      const res = abKoResults[m.id];
+      if (res && res.winner) {
+        if (t1 && t1 !== res.winner) lostInKO.add(t1);
+        if (t2 && t2 !== res.winner) lostInKO.add(t2);
+      }
+    });
+    return { lostInKO, koTeams, r32Full: koTeams.size === 32 };
+  }
+
+  function teamIsEliminated(team, elim) {
+    if (!team) return false;
+    if (elim.lostInKO.has(team)) return true;
+    if (elim.r32Full && !elim.koTeams.has(team)) return true;
+    return false;
+  }
+
+  // ── Max possible score ──
+  // Earned points are locked in; for every still-undecided pick whose team is
+  // still alive, add the points it could yet earn.
+  const ROUND_PTS = {
+    R32: TOURNAMENT_DATA.scoring.correctR32Winner,
+    R16: TOURNAMENT_DATA.scoring.correctR16Winner,
+    QF:  TOURNAMENT_DATA.scoring.correctQFWinner,
+    SF:  TOURNAMENT_DATA.scoring.correctSFWinner,
+    "3RD": TOURNAMENT_DATA.scoring.correctThirdPlaceWinner,
+    FINAL: TOURNAMENT_DATA.scoring.correctFinalWinner,
+  };
+  function computeMaxScore(scoreEntry, picksDoc, elim, allKoResults) {
+    let remaining = 0;
+    const koPicks = picksDoc.knockoutPicks || {};
+    (TOURNAMENT_DATA.knockoutMatches || []).forEach(m => {
+      const pick = koPicks[m.id];
+      if (!pick) return;
+      if (allKoResults[m.id]) return;            // resolved → already in score
+      if (!teamIsEliminated(pick, elim)) remaining += (ROUND_PTS[m.round] || 0);
+    });
+    // Tournament champion bonus (separate from the final-match knockout point).
+    const wp = picksDoc.winnerPick;
+    if (wp && !allKoResults["match_104"] && !teamIsEliminated(wp, elim)) {
+      remaining += TOURNAMENT_DATA.scoring.correctTournamentWinner;
+    }
+    return scoreEntry.score + remaining;
+  }
+
   // ── Load full standings ──
   async function loadStandings() {
     try {
-      const [allPicksDocs, allKoResults, allGroupResults, actualThirdQualifiers, allUsers, config] = await Promise.all([
+      const [allPicksDocs, allKoResults, allGroupResults, actualThirdQualifiers, allUsers, config, slotOverrides] = await Promise.all([
         getAllPicks(), getAllResults(), getAllGroupStandings(),
-        getThirdPlaceQualifiers(), getAllUsers(), getTournamentConfig(),
+        getThirdPlaceQualifiers(), getAllUsers(), getTournamentConfig(), getBracketSlotOverrides(),
       ]);
 
       const phase1Locked = !!config.phase1Locked;
+
+      // Populate the shared bracket-resolution state so abResolveTeamSlot() works
+      // here — used to determine eliminated teams + each player's max score.
+      abGroupStandings  = allGroupResults || {};
+      abThirdQualifiers = actualThirdQualifiers || null;
+      abSlotOverrides   = slotOverrides || {};
+      abKoResults       = allKoResults || {};
+      abComputeBestThirdSlots();
+      const elim = computeEliminatedTeams();
       document.getElementById("stPickNotice").style.display = phase1Locked ? "none" : "flex";
 
       const displayMap = {};
       allUsers.forEach(u => { displayMap[u.username] = u.displayName || u.username; });
 
-      const wpMap = {};
-      allPicksDocs.forEach(p => { wpMap[p.username] = p.winnerPick || null; });
+      const wpMap = {}, pickMap = {};
+      allPicksDocs.forEach(p => { wpMap[p.username] = p.winnerPick || null; pickMap[p.username] = p; });
 
       const scores = calculateScores(
         allPicksDocs, allKoResults, allGroupResults,
         actualThirdQualifiers, TOURNAMENT_DATA.scoring
       );
       scores.forEach(s => {
-        s.displayName = displayMap[s.username] || s.username;
-        s.winnerPick  = wpMap[s.username] || null;
+        s.displayName   = displayMap[s.username] || s.username;
+        s.winnerPick    = wpMap[s.username] || null;
+        s.wpEliminated  = s.winnerPick ? teamIsEliminated(s.winnerPick, elim) : false;
+        s.maxScore      = computeMaxScore(s, pickMap[s.username] || {}, elim, allKoResults);
       });
 
       renderStPodium(scores, phase1Locked);
