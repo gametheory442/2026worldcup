@@ -304,6 +304,7 @@
     .st-player { display: flex; align-items: center; gap: .55rem; }
     .st-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--green-light); border: 1.5px solid var(--green-mid); display: flex; align-items: center; justify-content: center; font-size: 1.05rem; flex-shrink: 0; font-family: var(--font-emoji); }
     .st-avatar.gold-av { background: var(--gold-light); border-color: var(--gold); }
+    .st-avatar.elim-av { background: #FEE2E2; border-color: #FCA5A5; }
     .st-name { font-weight: 600; color: var(--dark); font-size: .84rem; }
     .st-score { font-family: var(--font-head); font-size: 1rem; font-weight: 700; color: var(--green); }
     .st-score.zero { color: var(--muted); }
@@ -1095,13 +1096,14 @@
       const rankBadge = rank <= 3
         ? `<span class="st-rank st-rank-${rank}">${rank}</span>`
         : `<span class="st-rank st-rank-n">${rank}</span>`;
-      // Champion pick: show the picked team's name (no points awarded until the
-      // tournament ends), with a red badge if that team has been eliminated.
+      // Champion column: show who they have winning the final in their bracket
+      // (knockoutPicks.match_104), with a red badge if that team is eliminated.
+      const bw = entry.bracketWinner;
       let champCell;
-      if (phase1Locked && wp) {
-        const flag = (TOURNAMENT_DATA.teams[wp]?.flag || "🏳️");
-        const name = (typeof shortName === "function" && shortName(wp)) || wp;
-        champCell = `<span class="st-wp ${entry.wpEliminated ? 'elim' : ''}"><span class="flag">${flag}</span>${name}</span>`;
+      if (phase1Locked && bw) {
+        const flag = (TOURNAMENT_DATA.teams[bw]?.flag || "🏳️");
+        const name = (typeof shortName === "function" && shortName(bw)) || bw;
+        champCell = `<span class="st-wp ${entry.bwEliminated ? 'elim' : ''}"><span class="flag">${flag}</span>${name}</span>`;
       } else {
         champCell = `<span class="st-wp empty">—</span>`;
       }
@@ -1111,7 +1113,7 @@
           <td style="padding-left:.75rem">${rankBadge}</td>
           <td>
             <div class="st-player">
-              <div class="st-avatar ${rank === 1 ? 'gold-av' : ''}">${avatarEmoji}</div>
+              <div class="st-avatar ${entry.wpEliminated ? 'elim-av' : (rank === 1 ? 'gold-av' : '')}" ${wp ? `title="Champion pick: ${wp}${entry.wpEliminated ? ' (eliminated)' : ''}"` : ''}>${avatarEmoji}</div>
               <span class="st-name">${entry.displayName || entry.username}</span>
             </div>
           </td>
@@ -1213,10 +1215,13 @@
         actualThirdQualifiers, TOURNAMENT_DATA.scoring
       );
       scores.forEach(s => {
+        const pd = pickMap[s.username] || {};
         s.displayName   = displayMap[s.username] || s.username;
-        s.winnerPick    = wpMap[s.username] || null;
+        s.winnerPick    = wpMap[s.username] || null;                       // sign-up champion pick → avatar flag
         s.wpEliminated  = s.winnerPick ? teamIsEliminated(s.winnerPick, elim) : false;
-        s.maxScore      = computeMaxScore(s, pickMap[s.username] || {}, elim, allKoResults);
+        s.bracketWinner = (pd.knockoutPicks && pd.knockoutPicks.match_104) || null; // who they have winning the final
+        s.bwEliminated  = s.bracketWinner ? teamIsEliminated(s.bracketWinner, elim) : false;
+        s.maxScore      = computeMaxScore(s, pd, elim, allKoResults);
       });
 
       renderStPodium(scores, phase1Locked);
