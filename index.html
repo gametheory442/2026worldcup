@@ -612,6 +612,65 @@
     .ab-vs::before, .ab-vs::after { content: ''; flex: 1; height: 1px; background: var(--border); }
     .ab-vs span { font-family: var(--font-head); font-size: .58rem; font-weight: 700; letter-spacing: .06em; color: var(--muted); }
     @media (max-width: 640px) { .ab-col { width: 168px; } }
+
+    /* ── Clickable player names ── */
+    .st-name-link { cursor: pointer; }
+    .st-name-link:hover .st-name { color: var(--green); text-decoration: underline; }
+    .st-tap-hint { font-size: .7rem; color: var(--muted); font-weight: 500; }
+    @media (max-width: 520px) { .st-tap-hint { display: none; } }
+
+    /* ── Player picks detail ── */
+    .pd-head { display: flex; flex-direction: column; gap: .75rem; margin-bottom: 1.1rem; }
+    .pd-back {
+      align-self: flex-start; display: inline-flex; align-items: center; gap: .35rem;
+      background: var(--white); border: 1.5px solid var(--border); color: var(--green);
+      font-family: var(--font-head); font-size: .78rem; font-weight: 600;
+      padding: .45rem .8rem; border-radius: var(--radius); cursor: pointer; transition: all .15s;
+    }
+    .pd-back:hover { background: var(--green-light); border-color: var(--green); }
+    .pd-name { font-family: var(--font-head); font-size: 1.5rem; font-weight: 700; color: var(--dark); line-height: 1.1; }
+    .pd-score-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
+    .pd-chip { font-size: .72rem; font-weight: 600; padding: .25rem .6rem; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); }
+    .pd-chip.total { background: var(--green); border-color: var(--green-dark); color: #fff; }
+    .pd-chip.gold { background: var(--gold-light); border-color: var(--gold); color: var(--gold-dark); }
+
+    .pd-section { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.1rem 1.1rem; margin-bottom: 1rem; box-shadow: var(--shadow-sm); }
+    .pd-section-head { font-family: var(--font-head); font-size: .82rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--green); margin-bottom: .75rem; }
+    .pd-empty { font-size: .82rem; color: var(--muted); }
+
+    .pd-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: .7rem; }
+    .pd-group-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .pd-group-head { display: flex; justify-content: space-between; align-items: center; background: var(--bg); padding: .4rem .6rem; font-family: var(--font-head); font-size: .74rem; font-weight: 700; color: var(--dark); }
+    .pd-gpts { color: var(--green); }
+    .pd-grow { display: flex; align-items: center; gap: .5rem; padding: .4rem .6rem; border-top: 1px solid var(--border); font-size: .78rem; }
+    .pd-grow.correct { box-shadow: inset 3px 0 0 var(--green); }
+    .pd-grow.tier    { box-shadow: inset 3px 0 0 var(--gold); }
+    .pd-grow.wrong   { box-shadow: inset 3px 0 0 var(--error); }
+    .pd-pos { width: 18px; height: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px; background: var(--bg); font-size: .64rem; font-weight: 700; color: var(--muted); }
+    .pd-team { display: flex; align-items: center; gap: .4rem; flex: 1; min-width: 0; font-weight: 500; overflow: hidden; }
+    .pd-team .flag { flex-shrink: 0; }
+    .pd-team .name, .pd-team { white-space: nowrap; text-overflow: ellipsis; }
+    .pd-grow-meta { font-size: .64rem; color: var(--muted); white-space: nowrap; }
+    .pd-ptbadge { flex-shrink: 0; min-width: 30px; text-align: center; font-size: .7rem; font-weight: 700; padding: .15rem .35rem; border-radius: 4px; background: var(--bg); color: var(--muted); }
+    .pd-ptbadge.correct { background: var(--green-light); color: var(--green); }
+    .pd-ptbadge.tier    { background: var(--gold-light); color: var(--gold-dark); }
+    .pd-ptbadge.wrong   { background: #FEE2E2; color: var(--error); }
+
+    .pd-chips-row { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .pd-tchip { display: inline-flex; align-items: center; gap: .3rem; font-size: .74rem; font-weight: 500; padding: .3rem .55rem; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); }
+    .pd-tchip.correct { background: var(--green-light); border-color: var(--green); color: var(--green); }
+    .pd-tchip.wrong   { background: #FEF2F2; border-color: #F3C2C2; color: var(--error); opacity: .85; }
+
+    .pd-ko-round-label { font-family: var(--font-head); font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: .85rem 0 .45rem; }
+    .pd-ko-round-label:first-child { margin-top: 0; }
+    .pd-ko-row { display: flex; align-items: center; gap: .6rem; padding: .5rem .6rem; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: .4rem; font-size: .8rem; }
+    .pd-ko-row.correct { border-color: var(--green); background: var(--green-light); }
+    .pd-ko-row.wrong   { border-color: #F3C2C2; background: #FEF2F2; }
+    .pd-mnum { font-size: .62rem; font-weight: 700; color: var(--muted); width: 34px; flex-shrink: 0; }
+    .pd-status { font-size: .7rem; font-weight: 600; white-space: nowrap; }
+    .pd-status.correct { color: var(--green); }
+    .pd-status.wrong   { color: var(--error); }
+    .pd-status.pending { color: var(--muted); }
   </style>
 </head>
 <body>
@@ -632,9 +691,6 @@
   </button>
   <button class="tab-btn" id="tab-standings" role="tab" aria-controls="panel-standings" onclick="switchTab('standings')">
     📊 Standings
-  </button>
-  <button class="tab-btn" id="tab-picks" role="tab" aria-controls="panel-picks" onclick="switchTab('picks')">
-    ⚽ Picks
   </button>
 </nav>
 
@@ -784,7 +840,7 @@
     <div class="st-wrap">
 
       <!-- Sub-tabs -->
-      <div class="st-tab-bar">
+      <div class="st-tab-bar" id="stTabBar">
         <button class="st-tab active" id="sttab-leaderboard" onclick="switchStTab('leaderboard')">🏆 Leaderboard</button>
         <button class="st-tab" id="sttab-groups" onclick="switchStTab('groups')">⚽ Group Standings</button>
         <button class="st-tab" id="sttab-bracket" onclick="switchStTab('bracket')">🏆 Bracket</button>
@@ -812,6 +868,7 @@
               <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               Full Standings
             </div>
+            <span class="st-tap-hint">👆 Tap a player to see their picks</span>
             <div class="st-live"><span class="lb-live-dot"></span> Live</div>
           </div>
           <div id="stLoading" class="st-loading">
@@ -862,90 +919,15 @@
         <div id="stBracketNote" class="st-groups-note"></div>
       </div>
 
+      <!-- ── Player Picks Detail Panel ── -->
+      <div id="stpanel-player" style="display:none">
+        <div id="stPlayerBody"></div>
+      </div>
+
     </div><!-- /st-wrap -->
   </div><!-- /stMain -->
 </div>
 
-<!-- PICKS TAB -->
-<div class="tab-panel" id="panel-picks" role="tabpanel">
-<div class="login-wrap">
-
-  <section class="login-hero">
-    <div class="trophy-mark">🏆</div>
-    <div class="eyebrow">FIFA World Cup 2026 · Family Edition</div>
-    <h1 class="login-title">
-      Pick Your<br>
-      <span class="accent">Champions</span>
-    </h1>
-    <p class="login-subtitle">
-      48 teams. 104 matches. One champion.<br>Predict the results, climb the leaderboard.
-    </p>
-
-    <div class="stats-strip">
-      <div class="stat-item">
-        <div class="stat-num">48</div>
-        <div class="stat-lbl">Teams</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-num">104</div>
-        <div class="stat-lbl">Matches</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-num">12</div>
-        <div class="stat-lbl">Groups</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-num">3</div>
-        <div class="stat-lbl">Countries</div>
-      </div>
-    </div>
-  </section>
-
-  <div class="login-card-wrap">
-    <div class="login-card">
-      <div class="login-card-title">
-        👤 Enter Your Name to Play
-      </div>
-
-      <div class="form-group" style="margin-bottom:.75rem;">
-        <label class="form-label" for="username-input">Your name</label>
-        <div class="login-input-row">
-          <input
-            id="username-input"
-            class="form-input"
-            type="text"
-            placeholder="e.g. Uncle John"
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="words"
-            spellcheck="false"
-            maxlength="32"
-          />
-          <button class="btn btn-primary" id="login-btn">
-            Let's Go →
-          </button>
-        </div>
-        <p class="login-note">
-          We did not want to need to store passwords, so your name will be your login for phase 2 as well.
-        </p>
-      </div>
-
-      <div id="login-error" class="alert alert-error">
-        ⚠️ Please enter your name to continue.
-      </div>
-
-      <div class="users-hint" id="users-hint">
-        <div class="users-hint-label">Or pick your name</div>
-        <div class="users-chips" id="users-chips">
-          <span class="users-loading">Loading players…</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-</div>
-</div><!-- /panel-picks -->
 
 <footer class="site-footer">
   <strong>WC2026 Family Bracket</strong> · USA · Canada · Mexico · Final at MetLife Stadium, July 19
@@ -956,12 +938,6 @@
 <script>
   // ── Tab switching (global, not module) ──
   function switchTab(name) {
-    // If user is already logged in and clicks Picks, go straight to picks.html
-    // (session check handled inline since we can't use module imports here)
-    if (name === 'picks' && sessionStorage.getItem('wc2026_user')) {
-      window.location.href = 'bracket.html';
-      return;
-    }
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
     document.getElementById('tab-' + name).classList.add('active');
@@ -970,10 +946,10 @@
     history.replaceState(null, '', '#' + name);
   }
 
-  // ── Initialize active tab from hash or default to 'picks' ──
+  // ── Initialize active tab from hash or default to 'standings' ──
   (function initTab() {
     const hash = window.location.hash.replace('#', '');
-    const valid = ['rules', 'standings', 'picks'];
+    const valid = ['rules', 'standings'];
     const tab = valid.includes(hash) ? hash : 'standings';
     // Use setTimeout to let the DOM settle before switching
     setTimeout(() => switchTab(tab), 0);
@@ -981,10 +957,6 @@
 </script>
 <script type="module">
   import {
-    getSessionUser,
-    setSessionUser,
-    userExists,
-    createUser,
     getAllUsers,
     getAllPicks,
     getAllResults,
@@ -992,45 +964,12 @@
     getThirdPlaceQualifiers,
     getTournamentConfig,
     calculateScores,
+    scoreGroupStandings,
     getAllFifaStandings,
     getBracketSlotOverrides,
   } from "./firebase.js";
 
   /* global TOURNAMENT_DATA, getTeamFlag, shortName */
-
-  // ── If already logged in, redirect ──
-  const existing = getSessionUser();
-  if (existing) {
-    window.location.replace("bracket.html");
-  }
-
-  // ── Load existing users for quick-pick chips ──
-  const chipsEl = document.getElementById("users-chips");
-  const hintEl  = document.getElementById("users-hint");
-
-  async function loadUsers() {
-    try {
-      const users = await getAllUsers();
-      if (!users || users.length === 0) { hintEl.style.display = "none"; return; }
-      chipsEl.innerHTML = "";
-      users
-        .sort((a, b) => (a.displayName || a.username).localeCompare(b.displayName || b.username))
-        .forEach(u => {
-          const name = u.displayName || u.username;
-          const btn  = document.createElement("button");
-          btn.className   = "user-chip-btn";
-          btn.textContent = name;
-          btn.addEventListener("click", () => {
-            document.getElementById("username-input").value = name;
-            document.getElementById("username-input").focus();
-          });
-          chipsEl.appendChild(btn);
-        });
-    } catch (err) {
-      console.error("Failed to load users:", err);
-      hintEl.style.display = "none";
-    }
-  }
 
   // ── Standings tab switching ──
   let stGroupsLoaded  = false;
@@ -1057,7 +996,7 @@
       const flag  = (phase1Locked && entry.winnerPick)
         ? (TOURNAMENT_DATA.teams[entry.winnerPick]?.flag || "👤") : "👤";
       return `
-        <div class="st-podium-item">
+        <div class="st-podium-item st-name-link" data-user="${encodeURIComponent(entry.username)}" title="View ${entry.displayName || entry.username}'s picks">
           <div class="st-podium-avatar ${avCls}">
             ${rank === 1 ? '<span class="st-podium-crown">👑</span>' : ""}
             ${flag}
@@ -1112,8 +1051,8 @@
         <tr>
           <td style="padding-left:.75rem">${rankBadge}</td>
           <td>
-            <div class="st-player">
-              <div class="st-avatar ${entry.wpEliminated ? 'elim-av' : (rank === 1 ? 'gold-av' : '')}" ${wp ? `title="Champion pick: ${wp}${entry.wpEliminated ? ' (eliminated)' : ''}"` : ''}>${avatarEmoji}</div>
+            <div class="st-player st-name-link" data-user="${encodeURIComponent(entry.username)}" title="View ${entry.displayName || entry.username}'s picks">
+              <div class="st-avatar ${entry.wpEliminated ? 'elim-av' : (rank === 1 ? 'gold-av' : '')}">${avatarEmoji}</div>
               <span class="st-name">${entry.displayName || entry.username}</span>
             </div>
           </td>
@@ -1223,6 +1162,16 @@
         allPicksDocs, allKoResults, allGroupResults,
         actualThirdQualifiers, TOURNAMENT_DATA.scoring
       );
+
+      // Stash everything the player-detail view needs.
+      stPickMap         = pickMap;
+      stDisplayMap      = displayMap;
+      stGroupResults    = allGroupResults || {};
+      stKoResults       = allKoResults || {};
+      stThirdQualifiers = actualThirdQualifiers || null;
+      stScoreByUser     = {};
+      scores.forEach(s => { stScoreByUser[s.username] = s; });
+
       scores.forEach(s => {
         const pd = pickMap[s.username] || {};
         s.displayName   = displayMap[s.username] || s.username;
@@ -1500,39 +1449,181 @@
     }
   }
 
-  loadUsers();
-  loadStandings();
+  // ───────────────────────────────────────────────────────────
+  // Player picks detail view
+  // ───────────────────────────────────────────────────────────
+  // Populated by loadStandings() so a player's card can be rendered on click.
+  let stPickMap        = {};   // username → picks doc
+  let stScoreByUser    = {};   // username → score entry (from calculateScores)
+  let stDisplayMap     = {};   // username → display name
+  let stGroupResults   = {};   // actual final group standings
+  let stKoResults      = {};   // actual knockout winners
+  let stThirdQualifiers = null;
 
-  // ── Login logic ──
-  const loginBtn  = document.getElementById("login-btn");
-  const inputEl   = document.getElementById("username-input");
-  const errorEl   = document.getElementById("login-error");
+  const KO_ROUND_ORDER = ["R32", "R16", "QF", "SF", "3RD", "FINAL"];
+  const ORDINAL = ["", "1st", "2nd", "3rd", "4th"];
 
-  async function doLogin() {
-    const raw = inputEl.value.trim();
-    if (!raw) { errorEl.style.display = "flex"; inputEl.focus(); return; }
-    errorEl.style.display = "none";
-    loginBtn.disabled    = true;
-    loginBtn.textContent = "…";
-    inputEl.disabled     = true;
-    try {
-      const exists = await userExists(raw);
-      if (!exists) await createUser(raw);
-      setSessionUser(raw);
-      window.location.href = "bracket.html";
-    } catch (err) {
-      console.error("Login error:", err);
-      loginBtn.disabled    = false;
-      loginBtn.textContent = "Let's Go →";
-      inputEl.disabled     = false;
-      errorEl.textContent  = "⚠️ Something went wrong. Check your connection and try again.";
-      errorEl.style.display = "flex";
-    }
+  function statusIcon(st) {
+    return st === "correct" ? "✓" : st === "wrong" ? "✗" : st === "tier" ? "≈" : "⋯";
   }
 
-  loginBtn.addEventListener("click", doLogin);
-  inputEl.addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
-  inputEl.addEventListener("input", () => { if (inputEl.value.trim()) errorEl.style.display = "none"; });
+  window.showPlayerDetail = function(username) {
+    const pd = stPickMap[username];
+    if (!pd) return;
+    const entry = stScoreByUser[username] || { score: 0, breakdown: {} };
+    const name  = stDisplayMap[username] || username;
+    const bd    = entry.breakdown || {};
+
+    // Per-group scoring detail (same engine used for the leaderboard total).
+    const groupRes = scoreGroupStandings(pd.groupPicks || {}, stGroupResults, stThirdQualifiers);
+
+    let html = "";
+
+    // ── Header ──
+    html += `
+      <div class="pd-head">
+        <button class="pd-back" onclick="backToLeaderboard()">← Leaderboard</button>
+        <div>
+          <div class="pd-name">${name}</div>
+          <div class="pd-score-chips">
+            <span class="pd-chip total">${entry.score} pts</span>
+            <span class="pd-chip">Groups ${bd.groupStage || 0}</span>
+            <span class="pd-chip">Knockout ${bd.knockout || 0}</span>
+            ${bd.winner ? `<span class="pd-chip gold">Champion +${bd.winner}</span>` : ""}
+          </div>
+        </div>
+      </div>`;
+
+    // ── Champion pick ──
+    const wp = pd.winnerPick;
+    if (wp) {
+      const finalWinner = stKoResults["match_104"]?.winner || null;
+      let st = "pending", label = "Awaiting the final";
+      if (finalWinner) {
+        if (finalWinner === wp) { st = "correct"; label = "Lifted the trophy!"; }
+        else { st = "wrong"; label = `Did not win · ${shortName(finalWinner)} did`; }
+      }
+      html += `
+        <div class="pd-section">
+          <div class="pd-section-head">🏆 Champion Pick</div>
+          <div class="pd-ko-row ${st}">
+            <span class="pd-team"><span class="flag">${getTeamFlag(wp)}</span>${shortName(wp)}</span>
+            <span class="pd-status ${st}">${statusIcon(st)} ${label}</span>
+          </div>
+        </div>`;
+    }
+
+    // ── Group picks ──
+    html += `<div class="pd-section"><div class="pd-section-head">⚽ Group Picks</div><div class="pd-groups">`;
+    GROUPS.forEach(g => {
+      const gp     = (pd.groupPicks && pd.groupPicks[g]) || [];
+      const gd     = groupRes.byGroup[g] || { pts: 0, detail: [], entered: false };
+      const actual = stGroupResults?.[g]?.standings || null;
+      html += `<div class="pd-group-card">
+        <div class="pd-group-head"><span>Group ${g}</span><span class="pd-gpts">${gd.pts} pts</span></div>`;
+      if (!gp.length) {
+        html += `<div class="pd-empty" style="padding:.5rem .6rem">No picks</div>`;
+      } else {
+        for (let i = 0; i < 4; i++) {
+          const team = gp[i];
+          const d    = gd.detail[i] || {};
+          let st = "pending";
+          if (gd.entered && actual) {
+            if (d.pts === 3) st = "correct";
+            else if (d.pts === 1) st = "tier";
+            else if (d.played === false) st = "pending";
+            else st = "wrong";
+          }
+          const aIdx = actual ? actual.indexOf(team) : -1;
+          let meta = "—";
+          if (st !== "pending") meta = aIdx !== -1 ? `finished ${ORDINAL[aIdx + 1]}` : "eliminated";
+          const badge = d.pts ? "+" + d.pts : (st === "pending" ? "·" : "0");
+          html += `<div class="pd-grow ${st}">
+            <span class="pd-pos">${i + 1}</span>
+            <span class="pd-team"><span class="flag">${getTeamFlag(team)}</span>${shortName(team)}</span>
+            <span class="pd-grow-meta">${meta}</span>
+            <span class="pd-ptbadge ${st}">${badge}</span>
+          </div>`;
+        }
+      }
+      html += `</div>`;
+    });
+    html += `</div></div>`;
+
+    // ── 3rd-place qualifier picks ──
+    const tpa = (pd.groupPicks && pd.groupPicks.thirdPlaceAdvancing) || [];
+    if (tpa.length) {
+      const actualSet = new Set(stThirdQualifiers || []);
+      html += `<div class="pd-section"><div class="pd-section-head">🥉 3rd-Place Qualifier Picks</div><div class="pd-chips-row">`;
+      tpa.forEach(t => {
+        let st = "pending";
+        if (stThirdQualifiers) st = actualSet.has(t) ? "correct" : "wrong";
+        const mark = st === "correct" ? " ✓" : st === "wrong" ? " ✗" : "";
+        html += `<span class="pd-tchip ${st}"><span class="flag">${getTeamFlag(t)}</span>${shortName(t)}${mark}</span>`;
+      });
+      html += `</div></div>`;
+    }
+
+    // ── Knockout picks ──
+    const koPicks = pd.knockoutPicks || {};
+    html += `<div class="pd-section"><div class="pd-section-head">🏟️ Knockout Picks</div>`;
+    if (!Object.keys(koPicks).length) {
+      html += `<div class="pd-empty">No knockout bracket submitted.</div>`;
+    } else {
+      KO_ROUND_ORDER.forEach(round => {
+        const matches = (TOURNAMENT_DATA.knockoutMatches || [])
+          .filter(m => m.round === round && koPicks[m.id]);
+        if (!matches.length) return;
+        html += `<div class="pd-ko-round-label">${TOURNAMENT_DATA.roundLabels[round]}</div>`;
+        matches.forEach(m => {
+          const pick = koPicks[m.id];
+          const res  = stKoResults[m.id]?.winner || null;
+          let st = "pending", label = "Pending";
+          if (res) {
+            if (res === pick) { st = "correct"; label = "Correct"; }
+            else { st = "wrong"; label = `${shortName(res)} won`; }
+          }
+          const pts   = ROUND_PTS[round] || 0;
+          const badge = st === "correct" ? "+" + pts : (st === "pending" ? "·" : "0");
+          html += `<div class="pd-ko-row ${st}">
+            <span class="pd-mnum">M${m.matchNum}</span>
+            <span class="pd-team"><span class="flag">${getTeamFlag(pick)}</span>${shortName(pick)}</span>
+            <span class="pd-status ${st}">${statusIcon(st)} ${label}</span>
+            <span class="pd-ptbadge ${st}">${badge}</span>
+          </div>`;
+        });
+      });
+    }
+    html += `</div>`;
+
+    document.getElementById("stPlayerBody").innerHTML = html;
+    document.getElementById("stTabBar").style.display          = "none";
+    document.getElementById("stpanel-leaderboard").style.display = "none";
+    document.getElementById("stpanel-groups").style.display      = "none";
+    document.getElementById("stpanel-bracket").style.display     = "none";
+    document.getElementById("stpanel-player").style.display      = "";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  window.backToLeaderboard = function() {
+    document.getElementById("stpanel-player").style.display = "none";
+    document.getElementById("stTabBar").style.display       = "";
+    switchStTab("leaderboard");
+    window.scrollTo({ top: 0 });
+  };
+
+  // Delegated click → open a player's picks (works across table re-renders).
+  function wirePlayerClicks(el) {
+    if (!el) return;
+    el.addEventListener("click", e => {
+      const target = e.target.closest(".st-name-link");
+      if (target && target.dataset.user) showPlayerDetail(decodeURIComponent(target.dataset.user));
+    });
+  }
+  wirePlayerClicks(document.getElementById("stBody"));
+  wirePlayerClicks(document.getElementById("stPodiumRow"));
+
+  loadStandings();
 </script>
 
 </body>
