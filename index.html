@@ -1170,16 +1170,25 @@
   function computeMaxScore(scoreEntry, picksDoc, elim, allKoResults) {
     let remaining = 0;
     const koPicks = picksDoc.knockoutPicks || {};
+    // Every knockout match is independent EXCEPT the final, which is coupled with
+    // the champion bonus (both hinge on who wins match_104) — handled below.
     (TOURNAMENT_DATA.knockoutMatches || []).forEach(m => {
+      if (m.id === "match_104") return;
       const pick = koPicks[m.id];
       if (!pick) return;
       if (allKoResults[m.id]) return;            // resolved → already in score
       if (!teamIsEliminated(pick, elim)) remaining += (ROUND_PTS[m.round] || 0);
     });
-    // Tournament champion bonus (separate from the final-match knockout point).
-    const wp = picksDoc.winnerPick;
-    if (wp && !allKoResults["match_104"] && !teamIsEliminated(wp, elim)) {
-      remaining += TOURNAMENT_DATA.scoring.correctTournamentWinner;
+    // The final-match point (knockoutPicks.match_104) and the champion bonus
+    // (winnerPick) both require a specific team to win the final. Only one team
+    // wins it, so unless both picks name the same team only the better of the two
+    // is still attainable — never both.
+    if (!allKoResults["match_104"]) {
+      const finalPick = koPicks["match_104"];
+      const wp        = picksDoc.winnerPick;
+      const finalPts  = (finalPick && !teamIsEliminated(finalPick, elim)) ? (ROUND_PTS.FINAL || 0) : 0;
+      const champPts  = (wp && !teamIsEliminated(wp, elim)) ? TOURNAMENT_DATA.scoring.correctTournamentWinner : 0;
+      remaining += (finalPick && finalPick === wp) ? (finalPts + champPts) : Math.max(finalPts, champPts);
     }
     return scoreEntry.score + remaining;
   }
